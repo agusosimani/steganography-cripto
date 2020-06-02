@@ -5,7 +5,7 @@ int main(int argc, char ** argv) {
 }
 
 void arg_parse(int argc, char **argv) {
-    if (argc < 8) {
+    if (argc < 2) {
         fprintf(stderr, "Try 'stegobmp -h' for more information.\n");
         exit(EXIT_FAILURE);
     }
