@@ -4,6 +4,8 @@
 
 int main(int argc, char ** argv) {
     arg_parse(argc, argv);
+    validate_params();
+
     if (stegobmp_config.operation == embed) {
         start_embedding();
     } else if (stegobmp_config.operation == extract) {
@@ -18,6 +20,11 @@ void arg_parse(int argc, char **argv) {
     }
 
     // Default values
+    stegobmp_config.operation = operation_undefined;
+    stegobmp_config.file_to_hide = "";
+    stegobmp_config.bearer = "";
+    stegobmp_config.out_bitmapfile = "";
+    stegobmp_config.steg = steg_undefined;
     stegobmp_config.encrypt = false;
     stegobmp_config.enc_algorithm = "aes128";
     stegobmp_config.enc_mode = "cbc";
@@ -124,4 +131,48 @@ void help() {
            "\t-P | --pass password                               Contraseña de encripción\n");
 
     exit(0);
+}
+
+void validate_params(void) {
+    bool error = false;
+    char * error_message = "";
+
+    if (stegobmp_config.operation == operation_undefined) {
+        error = true;
+        error_message = "Debe indicar la operación a realizar con --embed o --extract.\n";
+    } else if (stegobmp_config.operation == embed) {
+        if (strcmp(stegobmp_config.file_to_hide, "") == 0) {
+            error = true;
+            error_message = "Debe indicar la ruta del archivo que se va a ocultar.\n";
+        }
+    }
+    if (strcmp(stegobmp_config.bearer, "") == 0) {
+        error = true;
+        error_message = "Debe indicar la ruta del archivo bmp portador.\n";
+    }
+    if (strcmp(stegobmp_config.out_bitmapfile, "") == 0) {
+        error = true;
+        error_message = "Debe indicar la ruta del archivo de salida.\n";
+    }
+    if (stegobmp_config.steg == steg_undefined) {
+        error = true;
+        error_message = "Debe indicar el algoritmo de esteganografiado a utilizar.\n";
+    }
+    if (stegobmp_config.encrypt) {
+        if (strcmp(stegobmp_config.enc_algorithm, "aes128") != 0 && strcmp(stegobmp_config.enc_algorithm, "aes192") != 0 &&
+            strcmp(stegobmp_config.enc_algorithm, "aes256") != 0 && strcmp(stegobmp_config.enc_algorithm, "des") != 0) {
+            error = true;
+            error_message = "Debe indicar un algoritmo de encripción válido";
+        }
+        if (strcmp(stegobmp_config.enc_mode, "ecb") != 0 && strcmp(stegobmp_config.enc_mode, "cfb") != 0 &&
+            strcmp(stegobmp_config.enc_mode, "ofb") != 0 && strcmp(stegobmp_config.enc_mode, "cbc") != 0) {
+            error = true;
+            error_message = "Debe indicar un modo de encripción válido";
+        }
+    }
+
+    if (error) {
+        fprintf(stderr, "%s", error_message);
+        exit(EXIT_FAILURE);
+    }
 }

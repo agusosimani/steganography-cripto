@@ -8,8 +8,8 @@
 #include <string.h>
 #include <getopt.h>
 
-enum Operation { embed, extract };
-enum Steg { LSB1, LSB4, LSBI };
+enum Operation { embed, extract, operation_undefined };
+enum Steg { LSB1, LSB4, LSBI, steg_undefined };
 
 typedef struct {
     enum Operation operation;
@@ -27,5 +27,6 @@ stegobmp_config_t stegobmp_config;
 
 void arg_parse(int argc, char **argv);
 void help();
+void validate_params(void);
 
 #endif //MAIN_H
