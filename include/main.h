@@ -28,4 +28,4 @@ stegobmp_config_t stegobmp_config;
 void arg_parse(int argc, char **argv);
 void help();
 
-#endif
+#endif //MAIN_H

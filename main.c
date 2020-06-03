@@ -1,7 +1,14 @@
 #include "include/main.h"
+#include "include/embed.h"
+#include "include/extract.h"
 
 int main(int argc, char ** argv) {
     arg_parse(argc, argv);
+    if (stegobmp_config.operation == embed) {
+        start_embedding();
+    } else if (stegobmp_config.operation == extract) {
+        start_extraction();
+    }
 }
 
 void arg_parse(int argc, char **argv) {
