@@ -36,16 +36,16 @@ void arg_parse(int argc, char **argv) {
             {"extract", no_argument, NULL, 'E'},
             {"help", no_argument, NULL, 'h'},
             {"in", required_argument, NULL, 'i'},
-            {"bearer", required_argument, NULL, 'p'},
+            {"p", required_argument, NULL, 'p'},
             {"out", required_argument, NULL, 'o'},
             {"steg", required_argument, NULL, 's'},
-            {"algorithm", required_argument, NULL, 'a'},
-            {"mode", required_argument, NULL, 'm'},
+            {"a", required_argument, NULL, 'a'},
+            {"m", required_argument, NULL, 'm'},
             {"pass", required_argument, NULL, 'P'}
 
     };
 
-    while ((option = getopt_long(argc, argv, ":eEhi:p:o:s:a:m:P:", long_options, &option_index)) != -1) {
+    while ((option = getopt_long_only(argc, argv, ":eEhi:p:o:s:a:m:P:", long_options, &option_index)) != -1) {
         switch (option) {
             case 'e':
                 stegobmp_config.operation  = embed;
@@ -118,17 +118,17 @@ void help() {
     printf("Uso:\n"
            "\tstegobmp [ --embed | --extract ] --in file -p bitmapfile --out bitmapfile --steg <LSB1 | LSB4 | LSBI> [ -a <aes128 | ase192 | aes256 | des> -m <ecb | cfb | ofb | cbc> --pass password ]\n\n"
            "Parámetros:\n"
-           "\t-e | --embed              Indica que se va a ocultar información.\n"
-           "\t-E | --extract            Indica que se va a extraer información.\n"
-           "\t-h | --help               Imprime la ayuda y termina.\n"
-           "\t-i | --in file            Archivo que se va a ocultar.\n"
-           "\t-p | --bearer bitmapfile  Archivo bmp que será el portador.\n"
-           "\t-o | --out bitmapfile     Archivo bmp de salida, es decir, el archivo bitmapfile con la información de file incrustada.\n\n"
+           "\t-embed          Indica que se va a ocultar información.\n"
+           "\t-extract        Indica que se va a extraer información.\n"
+           "\t-help           Imprime la ayuda y termina.\n"
+           "\t-in file        Archivo que se va a ocultar.\n"
+           "\t-p  bitmapfile  Archivo bmp que será el portador.\n"
+           "\t-o bitmapfile   Archivo bmp de salida, es decir, el archivo bitmapfile con la información de file incrustada.\n\n"
            "Parámetros opcionales:\n"
-           "\t-s | --steg <LSB1 | LSB4 | LSBI>                   Algoritmo de esteganografiado: LSB de 1bit, LSB de 4 bits, LSB Enhanced\n"
-           "\t-a | --algorithm <aes128 | aes192 | aes256 | des>  Algoritmo de encripción\n"
-           "\t-m | --mode <ecb | cfb | ofb | cbc>                Modo de encripción\n"
-           "\t-P | --pass password                               Contraseña de encripción\n");
+           "\t-steg <LSB1 | LSB4 | LSBI>            Algoritmo de esteganografiado: LSB de 1bit, LSB de 4 bits, LSB Enhanced\n"
+           "\t-a  <aes128 | aes192 | aes256 | des>  Algoritmo de encripción\n"
+           "\t-m <ecb | cfb | ofb | cbc>            Modo de encripción\n"
+           "\t-pass password                        Contraseña de encripción\n");
 
     exit(0);
 }
