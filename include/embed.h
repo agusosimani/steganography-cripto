@@ -1,8 +1,6 @@
 #ifndef EMBED_H
 #define EMBED_H
 
-#include <stdint.h>
-
 #include "main.h"
 #include "encryption.h"
 

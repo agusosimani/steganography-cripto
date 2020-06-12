@@ -1,7 +1,8 @@
 #include "include/extract.h"
 
 void start_extraction(void) {
-    char * embeded_bytes;
+    uint8_t * embeded_bytes;
+
     switch(stegobmp_config.steg) {
         case LSB1:
             embeded_bytes = extract_LSB1();
@@ -12,24 +13,28 @@ void start_extraction(void) {
         case LSBI:
             embeded_bytes = extract_LSBI();
             break;
+        case steg_undefined:
+            fprintf(stderr, "Debe indicar el algoritmo de esteganografiado utilizado.\n");
+            exit(EXIT_FAILURE);
     }
+
     if (stegobmp_config.encrypt) {
         // TODO decrypt with functions in encryption.c
     }
     // TODO write embeded_bytes to stegobmp_config.out_bitmapfile
 }
 
-char * extract_LSB1(void) {
+uint8_t * extract_LSB1(void) {
     // TODO
     return NULL;
 }
 
-char * extract_LSB4(void) {
+uint8_t * extract_LSB4(void) {
     // TODO
     return NULL;
 }
 
-char * extract_LSBI(void) {
+uint8_t * extract_LSBI(void) {
     // TODO
     return NULL;
 }

@@ -1,10 +1,11 @@
 #include "include/embed.h"
 
 void start_embedding(void) {
-    // Check if file_to_hide fits in bearer
-    // TODO
     unsigned long length_bytes_to_embed;
     uint8_t * bytes_to_embed = get_bytes_to_embed(&length_bytes_to_embed);
+
+    // Check if length_bytes_to_embed fits in bearer
+    // TODO
 
     switch(stegobmp_config.steg) {
         case LSB1:
