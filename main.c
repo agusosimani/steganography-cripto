@@ -116,13 +116,13 @@ void arg_parse(int argc, char **argv) {
 
 void help() {
     printf("Uso:\n"
-           "\tstegobmp [ --embed | --extract ] --in file -p bitmapfile --out bitmapfile --steg <LSB1 | LSB4 | LSBI> [ -a <aes128 | ase192 | aes256 | des> -m <ecb | cfb | ofb | cbc> --pass password ]\n\n"
+           "\tstegobmp [ -embed | -extract ] -in file -p bitmapfile -out bitmapfile -steg <LSB1 | LSB4 | LSBI> [ -a <aes128 | ase192 | aes256 | des> -m <ecb | cfb | ofb | cbc> -pass password ]\n\n"
            "Parámetros:\n"
            "\t-embed          Indica que se va a ocultar información.\n"
            "\t-extract        Indica que se va a extraer información.\n"
            "\t-help           Imprime la ayuda y termina.\n"
            "\t-in file        Archivo que se va a ocultar.\n"
-           "\t-p  bitmapfile  Archivo bmp que será el portador.\n"
+           "\t-p bitmapfile   Archivo bmp que será el portador.\n"
            "\t-o bitmapfile   Archivo bmp de salida, es decir, el archivo bitmapfile con la información de file incrustada.\n\n"
            "Parámetros opcionales:\n"
            "\t-steg <LSB1 | LSB4 | LSBI>            Algoritmo de esteganografiado: LSB de 1bit, LSB de 4 bits, LSB Enhanced\n"
