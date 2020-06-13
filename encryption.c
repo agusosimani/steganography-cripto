@@ -71,5 +71,22 @@ unsigned char * encrypt(uint8_t * plain_text, unsigned long length_plain_text, i
     // Set encryption parameters in the context
     EVP_EncryptInit_ex(evp_cipher_ctx, evp_cipher, NULL, key, IV);
 
-    return 0;
+    // Alloc memory for cipher
+    unsigned char * cipher = malloc((length_plain_text / EVP_CIPHER_block_size(evp_cipher) + (length_plain_text%EVP_CIPHER_block_size(evp_cipher)!=0)) *  EVP_CIPHER_block_size(evp_cipher));
+
+    // Encrypt
+    EVP_EncryptUpdate(evp_cipher_ctx, cipher, length_cipher, plain_text, (int)length_plain_text);
+
+    // Encrypt final part, remaining block + padding
+    int templ;
+    EVP_EncryptFinal(evp_cipher_ctx, cipher + *length_cipher, &templ);
+
+    // Update length_cipher
+    *length_cipher += templ;
+    cipher = realloc(cipher, (size_t)*length_cipher);
+
+    // Free context struct
+    EVP_CIPHER_CTX_free(evp_cipher_ctx);
+
+    return cipher;
 }
