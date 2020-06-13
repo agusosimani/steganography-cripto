@@ -2,10 +2,11 @@
 #define EXTRACT_H
 
 #include "main.h"
+#include "encryption.h"
 
 void start_extraction(void);
-uint8_t * extract_LSB1(void);
-uint8_t * extract_LSB4(void);
-uint8_t * extract_LSBI(void);
+uint8_t * extract_LSB1(unsigned long * length_embeded_bytes);
+uint8_t * extract_LSB4(unsigned long * length_embeded_bytes);
+uint8_t * extract_LSBI(unsigned long * length_embeded_bytes);
 
 #endif //EXTRACT_H

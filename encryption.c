@@ -90,3 +90,36 @@ unsigned char * encrypt(uint8_t * plain_text, unsigned long length_plain_text, i
 
     return cipher;
 }
+
+unsigned char * decrypt(uint8_t * cipher, unsigned long length_cipher, int * length_plain_text) {
+    // Get structs needed for symmetric cipher with evp.h (Initialize context)
+    const EVP_CIPHER * evp_cipher = get_evp_cipher();
+    EVP_CIPHER_CTX * evp_cipher_ctx = EVP_CIPHER_CTX_new();
+
+    // Derive key and IV from password
+    unsigned char key[EVP_MAX_KEY_LENGTH];
+    unsigned char IV[EVP_MAX_IV_LENGTH];
+    derive_from_password(evp_cipher, key, IV);
+
+    // Set decryption parameters in the context
+    EVP_DecryptInit_ex(evp_cipher_ctx, evp_cipher, NULL, key, IV);
+
+    // Alloc memory for plain_text
+    unsigned char * plain_text = malloc((length_cipher / EVP_CIPHER_block_size(evp_cipher) + (length_cipher%EVP_CIPHER_block_size(evp_cipher)!=0)) *  EVP_CIPHER_block_size(evp_cipher));
+
+    // Decrypt
+    EVP_DecryptUpdate(evp_cipher_ctx, plain_text, length_plain_text, cipher, (int)length_cipher);
+
+    // Decrypt final part, remaining block + padding
+    int templ;
+    EVP_DecryptFinal_ex(evp_cipher_ctx, plain_text + *length_plain_text, &templ);
+
+    // Update length_plain_text
+    *length_plain_text += templ;
+    plain_text = realloc(plain_text, (size_t)*length_plain_text);
+
+    // Free context struct
+    EVP_CIPHER_CTX_free(evp_cipher_ctx);
+
+    return plain_text;
+}
