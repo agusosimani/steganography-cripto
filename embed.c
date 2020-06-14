@@ -144,13 +144,13 @@ void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_em
     embed_LSB4(bytes_to_embed, length_bytes_to_embed);
 
     printf("%s\n", stegobmp_config.bearer);
-    *//*for (int j = 0; j < strlen(stegobmp_config.bearer); j++ ) {
+    for (int j = 0; j < strlen(stegobmp_config.bearer); j++ ) {
         char a = stegobmp_config.bearer[j];
         for (int i = 0; i < 8; i++) {
             printf("%d", !!((a << i) & 0x80));
         }
         printf("\n");
-    }*//*
+    }
 
     unsigned long * lenght = malloc(sizeof(unsigned long));
     uint8_t * embeded_bytes = extract_LSB4(lenght);
