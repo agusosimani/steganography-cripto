@@ -89,6 +89,16 @@ uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed) {
 }
 
 void embed_LSB1(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
+    for( unsigned long i = 0; i < length_bytes_to_embed; i++ ){
+        printf("%d ", bytes_to_embed[i]);
+    }
+    printf("\n");
+    for( unsigned long i = 0; i < length_bytes_to_embed; i++ ){
+        printf("%c ", bytes_to_embed[i]);
+    }
+
+
+
     // TODO
 }
 
