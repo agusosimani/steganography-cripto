@@ -158,7 +158,57 @@ void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_em
 }*/
 
 void embed_LSBI(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
-    // TODO
+
+    /* usaremos como clave los 6 primeros bytes (48 bits) de la imagen portadora */
+    uint8_t * key = malloc(6);
+    for (int i = 0; i < 6; i++) {
+        key[i] = stegobmp_config.bearer[i];
+    }
+
+    uint8_t hoop = key[0];
+    uint8_t aux = 0;
+    bool found = false;
+    for (int i = 0; i < 8; i++) {
+        if (!found && ((hoop << i) & 0x80) != 0) {
+            aux = aux | 1;
+            found = true;
+        } else {
+            aux = aux | 0;
+        }
+    }
+    hoop = aux;
+    if (hoop == 0) {
+        hoop = 256;
+    }
+    /* hoop puede ser cualquiera de [2, 4, 8, 16, 32, 64, 128, 256] */
+
+    // TODO armar el mensaje a encriptar
+    // TODO encriptar con RC4
+    // TODO chequear el tamaño, si no entra mostrar un mensaje de error
+
+    /* con el mensaje encriptado, lo ocultamos en el archivo bmp */
+
+    unsigned long index_embed = 0;
+    unsigned long index_bearer = 6;                     /* los primeros 6 bytes no se usan */
+    while (index_embed < length_bytes_to_embed) {
+
+        uint8_t byte_to_embed = bytes_to_embed[index_embed];
+        /* para esconder este byte, necesitamos 8/hoop bytes del bearer */
+        /*for (int i = 1; i >= 0; i--) {
+
+            uint8_t new_byte = byte_to_embed & (0xF << i * 4);
+            new_byte = new_byte >> (i * 4);
+
+            *//* pixel = unsigned char de 1 byte (0 a 255) *//*
+            uint8_t new_pixel = stegobmp_config.bearer[index_bearer];
+            new_pixel = (new_pixel & mask) | new_byte;
+            stegobmp_config.bearer[index_bearer] = new_pixel;
+            index_bearer++;
+        }*/
+
+        index_embed++;
+    }
+
 }
 
 
