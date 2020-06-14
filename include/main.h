@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <getopt.h>
 
 enum Operation { embed, extract, operation_undefined };
