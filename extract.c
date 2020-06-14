@@ -32,9 +32,44 @@ uint8_t * extract_LSB1(unsigned long * length_embeded_bytes) {
     return NULL;
 }
 
+
 uint8_t * extract_LSB4(unsigned long * length_embeded_bytes) {
-    // TODO
-    return NULL;
+
+    unsigned long index_embed = 0;
+    unsigned long index_bearer = 0;
+    unsigned long size_bearer = strlen(stegobmp_config.bearer);
+    uint8_t mask = 0xF;
+    uint8_t * embeded_bytes = calloc(BLOCK, sizeof(uint8_t));
+    int blocks = 1;
+
+    while (index_bearer < size_bearer) {
+
+        /* para extraer 1 byte, necesitamos 2 bytes del bearer */
+
+        uint8_t byte_to_extract_1 = stegobmp_config.bearer[index_bearer++];
+        uint8_t embeded_byte_1 = mask & byte_to_extract_1;
+        embeded_byte_1 = embeded_byte_1 << 4;
+
+        uint8_t byte_to_extract_2, embeded_byte_2 = 0x0;
+        if (index_bearer < size_bearer) {
+            byte_to_extract_2 = stegobmp_config.bearer[index_bearer++];
+            embeded_byte_2 = mask & byte_to_extract_2;
+        }
+
+        embeded_bytes[index_embed] = embeded_byte_1 | embeded_byte_2;
+        index_embed++;
+
+        if (index_embed >= BLOCK) {
+            blocks++;
+            uint8_t * embeded_bytes_aux = calloc(BLOCK*blocks, sizeof(uint8_t));
+            memcpy(embeded_bytes_aux, embeded_bytes, index_embed);
+            embeded_bytes = embeded_bytes_aux;
+        }
+    }
+
+    *length_embeded_bytes = index_embed;
+
+    return embeded_bytes;
 }
 
 uint8_t * extract_LSBI(unsigned long * length_embeded_bytes) {

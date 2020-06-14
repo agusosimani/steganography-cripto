@@ -1,11 +1,11 @@
 #include "include/embed.h"
 
 void start_embedding(void) {
+    // Check if file_to_hide fits in bearer
+    // TODO
+    // cambia dependiendo del algoritmo, asique hagámoslo en los métodos lsb1, lsb4 y lsbi
     unsigned long length_bytes_to_embed;
     uint8_t * bytes_to_embed = get_bytes_to_embed(&length_bytes_to_embed);
-
-    // Check if length_bytes_to_embed fits in bearer
-    // TODO
 
     switch(stegobmp_config.steg) {
         case LSB1:
@@ -102,12 +102,123 @@ void embed_LSB1(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
     // TODO
 }
 
-void embed_LSB4(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
-    // TODO
+void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
+
+    unsigned long size_bearer = strlen(stegobmp_config.bearer);
+
+    /* para que se pueda ocultar el mensaje en el bmp, por cada byte del mensaje se necesitan 2 bytes del bmp */
+    if (size_bearer*2 < length_bytes_to_embed) {
+        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %lu", size_bearer / 2);
+        return;
+    }
+
+    unsigned long index_embed = 0;
+    unsigned long index_bearer = 0;
+    uint8_t mask = 0xF0;
+
+    while (index_embed < length_bytes_to_embed) {
+
+        uint8_t byte_to_embed = bytes_to_embed[index_embed];
+        /* para esconder este byte, necesitamos 2 bytes del bearer */
+        for (int i = 1; i >= 0; i--) {
+
+            uint8_t new_byte = byte_to_embed & (0xF << i * 4);
+            new_byte = new_byte >> (i * 4);
+
+            /* pixel = unsigned char de 1 byte (0 a 255) */
+            uint8_t new_pixel = stegobmp_config.bearer[index_bearer];
+            new_pixel = (new_pixel & mask) | new_byte;
+            stegobmp_config.bearer[index_bearer] = new_pixel;
+            index_bearer++;
+        }
+
+        index_embed++;
+    }
 }
 
+/*int main (void) {
+    // Default values
+    stegobmp_config.operation = operation_undefined;
+    stegobmp_config.file_to_hide = "abcd";
+    stegobmp_config.bearer = malloc(13);
+    strcpy(stegobmp_config.bearer, "aaaaaaaaaaaa");
+    stegobmp_config.out_bitmapfile = "";
+    stegobmp_config.steg = steg_undefined;
+    stegobmp_config.encrypt = false;
+    stegobmp_config.enc_algorithm = "aes128";
+    stegobmp_config.enc_mode = "cbc";
+
+    uint8_t bytes_to_embed[] = {'a', 'b', 'c', 'd'};
+    unsigned long length_bytes_to_embed = 4;
+
+    embed_LSB4(bytes_to_embed, length_bytes_to_embed);
+
+    printf("%s\n", stegobmp_config.bearer);
+    for (int j = 0; j < strlen(stegobmp_config.bearer); j++ ) {
+        char a = stegobmp_config.bearer[j];
+        for (int i = 0; i < 8; i++) {
+            printf("%d", !!((a << i) & 0x80));
+        }
+        printf("\n");
+    }
+
+    unsigned long * lenght = malloc(sizeof(unsigned long));
+    uint8_t * embeded_bytes = extract_LSB4(lenght);
+    printf("%s\n", embeded_bytes);
+}*/
+
 void embed_LSBI(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
-    // TODO
+
+    /* usaremos como clave los 6 primeros bytes (48 bits) de la imagen portadora */
+    uint8_t * key = malloc(6);
+    for (int i = 0; i < 6; i++) {
+        key[i] = stegobmp_config.bearer[i];
+    }
+
+    uint8_t hoop = key[0];
+    uint8_t aux = 0;
+    bool found = false;
+    for (int i = 0; i < 8; i++) {
+        if (!found && ((hoop << i) & 0x80) != 0) {
+            aux = aux | 1;
+            found = true;
+        } else {
+            aux = aux | 0;
+        }
+    }
+    hoop = aux;
+    if (hoop == 0) {
+        hoop = 256;
+    }
+    /* hoop puede ser cualquiera de [2, 4, 8, 16, 32, 64, 128, 256] */
+
+    // TODO armar el mensaje a encriptar
+    // TODO encriptar con RC4
+    // TODO chequear el tamaño, si no entra mostrar un mensaje de error
+
+    /* con el mensaje encriptado, lo ocultamos en el archivo bmp */
+
+    unsigned long index_embed = 0;
+    unsigned long index_bearer = 6;                     /* los primeros 6 bytes no se usan */
+    while (index_embed < length_bytes_to_embed) {
+
+        uint8_t byte_to_embed = bytes_to_embed[index_embed];
+        /* para esconder este byte, necesitamos 8/hoop bytes del bearer */
+        /*for (int i = 1; i >= 0; i--) {
+
+            uint8_t new_byte = byte_to_embed & (0xF << i * 4);
+            new_byte = new_byte >> (i * 4);
+
+            *//* pixel = unsigned char de 1 byte (0 a 255) *//*
+            uint8_t new_pixel = stegobmp_config.bearer[index_bearer];
+            new_pixel = (new_pixel & mask) | new_byte;
+            stegobmp_config.bearer[index_bearer] = new_pixel;
+            index_bearer++;
+        }*/
+
+        index_embed++;
+    }
+
 }
 
 
