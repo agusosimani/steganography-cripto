@@ -1,5 +1,9 @@
 #include "include/embed.h"
 
+const uint8_t unmask_array[8] = {UNMASK_BIT_0, UNMASK_BIT_1, UNMASK_BIT_2, UNMASK_BIT_3, UNMASK_BIT_4, UNMASK_BIT_5, UNMASK_BIT_6, UNMASK_BIT_7};
+const uint8_t mask_array[8] = {MASK_BIT_0, MASK_BIT_1, MASK_BIT_2, MASK_BIT_3, MASK_BIT_4, MASK_BIT_5, MASK_BIT_6, MASK_BIT_7};
+uint8_t select_bearer_byte (uint8_t hoop, unsigned long index_bearer, unsigned long * bytes_embeded_in_bearer, int * cycles);
+
 void start_embedding(void) {
     // Check if file_to_hide fits in bearer
     // TODO
@@ -55,7 +59,7 @@ uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed) {
     uint8_t * bytes_to_embed = malloc((size_t) *length_bytes_to_embed);
 
     // Transform length_file_to_hide from decimal to hexa in Big Endian 32 bits representation
-    uint32_t block_size = __bswap_32((unsigned)length_file_to_hide);
+    uint32_t block_size = bswap_32((unsigned)length_file_to_hide);
 
     // Generate bytes_to_embed (real size || data from file_to_hide || extension)
     memcpy(bytes_to_embed, &block_size, sizeof(uint32_t));
@@ -66,11 +70,11 @@ uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed) {
     if (stegobmp_config.encrypt) {
         // Get cipher
         int length_cipher;
-        unsigned char * cipher = encrypt(bytes_to_embed, *length_bytes_to_embed, &length_cipher);
+        unsigned char * cipher = encrypt_ (bytes_to_embed, *length_bytes_to_embed, &length_cipher);
         free(bytes_to_embed);
 
         // Transform length_cipher from decimal to hexa in Big Endian 32 bits representation
-        uint32_t cipher_block_size = __bswap_32((unsigned) length_cipher);
+        uint32_t cipher_block_size = bswap_32((unsigned) length_cipher);
 
         // Generate bytes_to_embed (cipher size || cipher(real size || data from file_to_hide || extension))
         uint8_t * cipher_bytes_to_embed = malloc(length_cipher + sizeof(uint32_t));
@@ -168,17 +172,15 @@ void embed_LSBI(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
     uint8_t hoop = key[0];
     uint8_t aux = 0;
     bool found = false;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 8 && !found; i++) {
         if (!found && ((hoop << i) & 0x80) != 0) {
-            aux = aux | 1;
+            aux = mask_array[7-i];
             found = true;
-        } else {
-            aux = aux | 0;
         }
     }
     hoop = aux;
     if (hoop == 0) {
-        hoop = 256;
+        hoop = mask_array[7] * 2;
     }
     /* hoop puede ser cualquiera de [2, 4, 8, 16, 32, 64, 128, 256] */
 
@@ -188,28 +190,53 @@ void embed_LSBI(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
     /* con el mensaje encriptado, lo ocultamos en el archivo bmp */
 
-    unsigned long index_embed = 0;
-    unsigned long index_bearer = 6;                     /* los primeros 6 bytes no se usan */
-    while (index_embed < length_bytes_to_embed) {
+    /* error: se imprime mal, hace bien las cuentas y "escribe" el byte que quiero pero cuando lo imprimo no son los caracteres que escribía
+     * escribe después del 0x02aaaaa que es la key:
+     * `aa````a
+     * entonces queda: 0x02aaaaa`aa````a
+     * pero imprime:  0x02aaaaa``a`aa`a`
+     * */
+    unsigned long index_bytes_embed = 0;
+    unsigned long index_bits_embed = 7;
+    unsigned long index_bytes_bearer = 0;
+    unsigned long bytes_embeded_in_bearer = 0;
+    int cycles = 0;
+    while (index_bytes_embed < length_bytes_to_embed) {
 
-        uint8_t byte_to_embed = bytes_to_embed[index_embed];
-        /* para esconder este byte, necesitamos 8/hoop bytes del bearer */
-        /*for (int i = 1; i >= 0; i--) {
+        uint8_t byte_to_embed = bytes_to_embed[index_bytes_embed];
+        uint8_t bit_to_embed = (byte_to_embed & mask_array[index_bits_embed]) >> index_bits_embed;
+        index_bits_embed--;
+        if (index_bits_embed < 0 || index_bits_embed > 7) {
+            index_bits_embed = 7;
+            index_bytes_embed++;
+        }
+        index_bytes_bearer = select_bearer_byte(hoop, index_bytes_bearer, &bytes_embeded_in_bearer, &cycles);
+        uint8_t new_pixel = stegobmp_config.bearer[index_bytes_bearer];
+        new_pixel = (new_pixel & unmask_array[cycles]) | bit_to_embed;
+        stegobmp_config.bearer[index_bytes_bearer] = new_pixel;
 
-            uint8_t new_byte = byte_to_embed & (0xF << i * 4);
-            new_byte = new_byte >> (i * 4);
-
-            *//* pixel = unsigned char de 1 byte (0 a 255) *//*
-            uint8_t new_pixel = stegobmp_config.bearer[index_bearer];
-            new_pixel = (new_pixel & mask) | new_byte;
-            stegobmp_config.bearer[index_bearer] = new_pixel;
-            index_bearer++;
-        }*/
-
-        index_embed++;
     }
 
 }
 
+uint8_t select_bearer_byte (uint8_t hoop, unsigned long index_bearer, unsigned long * bytes_embeded_in_bearer, int * cycles) {
 
+    int size = strlen(stegobmp_config.bearer);
+    if (*bytes_embeded_in_bearer == size - 1) {
+        *cycles = *cycles + 1;
+        *bytes_embeded_in_bearer = 0;
+    }
 
+    /* los primeros 6 bytes no se usan */
+    if (index_bearer == 0) {
+        return 6;
+    }
+
+    int jump = index_bearer + hoop;
+    if (jump > size) {
+
+        jump = (jump - size) + 6;
+    }
+
+    return jump;
+}

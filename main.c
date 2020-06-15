@@ -1,16 +1,49 @@
 #include "include/main.h"
-#include "include/embed.h"
-#include "include/extract.h"
 
 int main(int argc, char ** argv) {
-    arg_parse(argc, argv);
+    /*arg_parse(argc, argv);
     validate_params();
 
     if (stegobmp_config.operation == embed) {
         start_embedding();
     } else if (stegobmp_config.operation == extract) {
         start_extraction();
+    }*/
+
+    // Default values
+    stegobmp_config.operation = operation_undefined;
+    stegobmp_config.file_to_hide = "abcd";
+    stegobmp_config.bearer = malloc(16);
+    char * bearer = malloc(16);
+    bearer[0] = 2;
+    for (int i = 1; i < 15; i++) {
+        bearer[i] = 'a';
     }
+    bearer[15] = 0;
+    strcpy(stegobmp_config.bearer, bearer);
+    stegobmp_config.out_bitmapfile = "";
+    stegobmp_config.steg = steg_undefined;
+    stegobmp_config.encrypt = false;
+    stegobmp_config.enc_algorithm = "aes128";
+    stegobmp_config.enc_mode = "cbc";
+
+    uint8_t bytes_to_embed[] = {'a'};
+    unsigned long length_bytes_to_embed = 1;
+
+    embed_LSBI(bytes_to_embed, length_bytes_to_embed);
+
+    printf("%s\n", stegobmp_config.bearer);
+    for (int j = 0; j < strlen(stegobmp_config.bearer); j++ ) {
+        char a = stegobmp_config.bearer[j];
+        for (int i = 0; i < 8; i++) {
+            printf("%d", !!((a << i) & 0x80));
+        }
+        printf("\n");
+    }
+
+    /*unsigned long * lenght = malloc(sizeof(unsigned long));
+    uint8_t * embeded_bytes = extract_LSB4(lenght);
+    printf("%s\n", embeded_bytes);*/
 }
 
 void arg_parse(int argc, char **argv) {

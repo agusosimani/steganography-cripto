@@ -1,7 +1,6 @@
 #ifndef EXTRACT_H
 #define EXTRACT_H
 
-#include "main.h"
 #include "encryption.h"
 
 #define BLOCK 50

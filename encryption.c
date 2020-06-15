@@ -58,7 +58,7 @@ void derive_from_password(const EVP_CIPHER * evp_cipher, unsigned char * key, un
     EVP_BytesToKey(evp_cipher, dgst, salt, (unsigned char *)stegobmp_config.pass, (int)strlen(stegobmp_config.pass),1, key, IV);
 }
 
-unsigned char * encrypt(uint8_t * plain_text, unsigned long length_plain_text, int * length_cipher) {
+unsigned char * encrypt_ (uint8_t * plain_text, unsigned long length_plain_text, int * length_cipher) {
     // Get structs needed for symmetric cipher with evp.h (Initialize context)
     const EVP_CIPHER * evp_cipher = get_evp_cipher();
     EVP_CIPHER_CTX * evp_cipher_ctx = EVP_CIPHER_CTX_new();
