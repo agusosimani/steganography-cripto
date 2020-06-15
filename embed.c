@@ -130,6 +130,7 @@ void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_em
     }
 }
 
+/* MAIN PARA PROBAR LSB4 */
 /*int main (void) {
     // Default values
     stegobmp_config.operation = operation_undefined;
@@ -190,12 +191,6 @@ void embed_LSBI(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
     /* con el mensaje encriptado, lo ocultamos en el archivo bmp */
 
-    /* error: se imprime mal, hace bien las cuentas y "escribe" el byte que quiero pero cuando lo imprimo no son los caracteres que escribía
-     * escribe después del 0x02aaaaa que es la key:
-     * `aa````a
-     * entonces queda: 0x02aaaaa`aa````a
-     * pero imprime:  0x02aaaaa``a`aa`a`
-     * */
     unsigned long index_bytes_embed = 0;
     unsigned long index_bits_embed = 7;
     unsigned long index_bytes_bearer = 0;
@@ -240,3 +235,37 @@ uint8_t select_bearer_byte (uint8_t hoop, unsigned long index_bearer, unsigned l
 
     return jump;
 }
+
+/* MAIN PARA PROBAR LSBI */
+/*int main (void) {
+    // Default values
+    stegobmp_config.operation = operation_undefined;
+    stegobmp_config.file_to_hide = "abcd";
+    stegobmp_config.bearer = malloc(16);
+    char * bearer = malloc(16);
+    bearer[0] = 2;
+    for (int i = 1; i < 15; i++) {
+        bearer[i] = 'a';
+    }
+    bearer[15] = 0;
+    strcpy(stegobmp_config.bearer, bearer);
+    stegobmp_config.out_bitmapfile = "";
+    stegobmp_config.steg = steg_undefined;
+    stegobmp_config.encrypt = false;
+    stegobmp_config.enc_algorithm = "aes128";
+    stegobmp_config.enc_mode = "cbc";
+
+    uint8_t bytes_to_embed[] = {'a'};
+    unsigned long length_bytes_to_embed = 1;
+
+    embed_LSBI(bytes_to_embed, length_bytes_to_embed);
+
+    printf("%s\n", stegobmp_config.bearer);
+    for (int j = 0; j < strlen(stegobmp_config.bearer); j++ ) {
+        char a = stegobmp_config.bearer[j];
+        for (int i = 0; i < 8; i++) {
+            printf("%d", !!((a << i) & 0x80));
+        }
+        printf("\n");
+    }
+}*/
