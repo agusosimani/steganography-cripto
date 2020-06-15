@@ -1,6 +1,4 @@
 #include "include/main.h"
-#include "include/embed.h"
-#include "include/extract.h"
 
 int main(int argc, char ** argv) {
     arg_parse(argc, argv);

@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <getopt.h>
+#include "embed.h"
+#include "extract.h"
 
 enum Operation { embed, extract, operation_undefined };
 enum Steg { LSB1, LSB4, LSBI, steg_undefined };
