@@ -1,4 +1,5 @@
 #include "include/extract.h"
+#define LSB1_RECOVER(hidden, i) ((hidden & 1) << 7 - (i % 8));
 
 void start_extraction(void) {
     unsigned long length_embeded_bytes = 0;
@@ -28,6 +29,43 @@ void start_extraction(void) {
 }
 
 uint8_t * extract_LSB1(unsigned long * length_embeded_bytes) {
+    FILE* bearer_file = fopen(stegobmp_config.bearer, "rb");
+    fseek(bearer_file, BYTES_IN_HEADER, SEEK_SET);
+
+    uint8_t byte_counter8 = 0;
+    uint8_t read_byte;
+    uint8_t data_length_aux[4] = {0,0,0,0};
+
+    while (byte_counter8 < FLENGTH_WORD_SIZE) {
+        for (int i = 0; i < 8; i++) {
+            read_byte = (uint8_t) fgetc(bearer_file);
+            uint8_t new_bit = (uint8_t) ((read_byte  & 0x1) << (7 - i));
+            data_length_aux[byte_counter8] = data_length_aux[byte_counter8] | new_bit;
+        }
+        byte_counter8++;
+    }
+
+    size_t data_size = (data_length_aux[0] << 24) + (data_length_aux[1] << 16) + (data_length_aux[2] << 8) + data_length_aux[3];
+
+    uint32_t byte_counter32 = 0;
+    char* hidden_message = calloc(FLENGTH_WORD_SIZE +  data_size + 1 ,sizeof(char));
+    memcpy(hidden_message, &data_size, FLENGTH_WORD_SIZE*sizeof(char));
+
+
+    while (byte_counter32 < data_size) {
+        for (int i = 0; i < 8; i++) {
+            read_byte = (uint8_t) fgetc(bearer_file);
+            uint8_t new_bit = (uint8_t) ((read_byte  & 0x1) << (7 - i));
+            hidden_message[byte_counter32 + FLENGTH_WORD_SIZE] =  hidden_message[byte_counter32 + FLENGTH_WORD_SIZE] | new_bit;
+        }
+        byte_counter32++;
+    }
+    hidden_message[byte_counter32 + FLENGTH_WORD_SIZE] = "\0";
+
+
+
+
+
     // TODO
     return NULL;
 }

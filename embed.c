@@ -89,18 +89,38 @@ uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed) {
 }
 
 void embed_LSB1(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
-    for( unsigned long i = 0; i < length_bytes_to_embed; i++ ){
-        printf("%d ", bytes_to_embed[i]);
+    FILE* bearer_file = fopen(stegobmp_config.bearer, "rb");
+    FILE* out_file = fopen(stegobmp_config.out_bitmapfile, "wb");
+    char c;
+    unsigned long embeded_bits_in_byte = 0;
+    unsigned long embeded_bytes = 0;
+    unsigned long header_bytes = 0;
+    while (((c = fgetc(bearer_file)) || 1) && !feof(bearer_file)) {
+        if(embeded_bytes < length_bytes_to_embed && header_bytes >= BYTES_IN_HEADER) {
+            char new_byte = (c & ~0x1) | ((bytes_to_embed[embeded_bytes] >> (7 - embeded_bits_in_byte)) & 1);
+            fputc(new_byte, out_file);
+            embeded_bits_in_byte++;
+            if(embeded_bits_in_byte % 8 == 0) {
+                embeded_bytes++;
+                embeded_bits_in_byte = 0;
+            }
+        } else {
+            fputc(c, out_file);
+        }
+        header_bytes++;
     }
-    printf("\n");
-    for( unsigned long i = 0; i < length_bytes_to_embed; i++ ){
-        printf("%c ", bytes_to_embed[i]);
-    }
-
-
-
-    // TODO
+    fclose(bearer_file);
+    fclose(out_file);
 }
+
+//for( unsigned long i = 0; i < length_bytes_to_embed; i++ ){
+//printf("%d ", bytes_to_embed[i]);
+//}
+//printf("\n");
+//for( unsigned long i = 0; i < length_bytes_to_embed; i++ ){
+//printf("%c ", bytes_to_embed[i]);
+//}
+
 
 void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 

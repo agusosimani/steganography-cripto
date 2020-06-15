@@ -5,6 +5,8 @@
 #include "encryption.h"
 
 #define BLOCK 50
+#define BYTES_IN_HEADER 54
+#define FLENGTH_WORD_SIZE 4
 
 void start_extraction(void);
 uint8_t * extract_LSB1(unsigned long * length_embeded_bytes);
