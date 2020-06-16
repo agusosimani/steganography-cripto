@@ -2,11 +2,11 @@
 
 uint32_t to_big_endian(uint8_t *aux);
 
+uint8_t *parse_text(unsigned char *text, uint32_t text1, uint32_t *pInt, char *extension, uint8_t *string);
+
 void start_extraction(void) {
-    unsigned long length_embeded_bytes = 0;
+    uint32_t length_embeded_bytes = 0;
     uint8_t * embeded_bytes = 0;
-    uint8_t * embeded_bytes_data = 0;
-    uint32_t embeded_bytes_data_size = 0;
     char * embeded_bytes_extension = 0;
     uint8_t embeded_bytes_extension_size = 0;
 
@@ -16,8 +16,10 @@ void start_extraction(void) {
 
     switch(stegobmp_config.steg) {
         case LSB1:
-            embeded_bytes_data_size = to_big_endian(extract_LSB1(bearer_file, FLENGTH_WORD_SIZE));
-            embeded_bytes_data = extract_LSB1(bearer_file, embeded_bytes_data_size);
+            length_embeded_bytes = to_big_endian(extract_LSB1(bearer_file, FLENGTH_WORD_SIZE));
+            embeded_bytes = extract_LSB1(bearer_file, length_embeded_bytes);
+            if (!stegobmp_config.encrypt)
+                embeded_bytes_extension = extract_extension_LSB1(bearer_file, &embeded_bytes_extension_size);
             break;
         case LSB4:
             embeded_bytes = extract_LSB4(&length_embeded_bytes);
@@ -31,32 +33,24 @@ void start_extraction(void) {
     }
 
     if (stegobmp_config.encrypt) {
-        int length_plain_text;
+        uint32_t length_plain_text;
         unsigned char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text);
-        free(embeded_bytes);
+        embeded_bytes = parse_text(plain_text, length_plain_text, &length_embeded_bytes, embeded_bytes_extension, &embeded_bytes_extension_size);
     }
 
-    embeded_bytes_extension = extract_extension(bearer_file, &embeded_bytes_extension_size);
-    generate_output_file(embeded_bytes_data, embeded_bytes_data_size, embeded_bytes_extension, embeded_bytes_extension_size);
+    generate_output_file(embeded_bytes, length_embeded_bytes, embeded_bytes_extension, embeded_bytes_extension_size);
 
     fclose(bearer_file);
     free(embeded_bytes_extension);
-    free(embeded_bytes_data);
+    free(embeded_bytes);
+}
+
+uint8_t *parse_text(unsigned char* plain_text, uint32_t length_plain_text, uint32_t* length_embeded_bytes, char* extension, uint8_t* extension_size) {
+    return NULL;
 }
 
 uint32_t to_big_endian(uint8_t *aux) {
     return (aux[0] << 24) + (aux[1] << 16) + (aux[2] << 8) + aux[3];
-}
-
-char *extract_extension(FILE* bearer_file, uint8_t* extension_length) {
-    switch(stegobmp_config.steg) {
-        case LSB1:
-            return extract_extension_LSB1(bearer_file, extension_length);
-        case LSB4:
-            break;
-        case LSBI:
-            break;
-    }
 }
 
 uint8_t* extract_LSB1(FILE* bearer_file, uint32_t  embeded_bytes_size){
