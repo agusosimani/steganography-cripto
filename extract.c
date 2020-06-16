@@ -6,10 +6,9 @@ void start_extraction(void) {
     unsigned long length_embeded_bytes = 0;
     uint8_t * embeded_bytes = 0;
     uint8_t * embeded_bytes_data = 0;
-    char * embeded_bytes_extension = 0;
-    uint8_t * embeded_bytes_size_aux = 0;
-    uint8_t extension_length = 0;
     uint32_t embeded_bytes_data_size = 0;
+    char * embeded_bytes_extension = 0;
+    uint8_t embeded_bytes_extension_size = 0;
 
     //Se abre la foto portadora del mensaje y se avanza hasta después del header porque ahí no hay información escondida
     FILE* bearer_file = fopen(stegobmp_config.bearer, "rb");
@@ -17,8 +16,7 @@ void start_extraction(void) {
 
     switch(stegobmp_config.steg) {
         case LSB1:
-            embeded_bytes_size_aux = extract_LSB1(bearer_file, FLENGTH_WORD_SIZE);
-            embeded_bytes_data_size = to_big_endian(embeded_bytes_size_aux);
+            embeded_bytes_data_size = to_big_endian(extract_LSB1(bearer_file, FLENGTH_WORD_SIZE));
             embeded_bytes_data = extract_LSB1(bearer_file, embeded_bytes_data_size);
             break;
         case LSB4:
@@ -38,8 +36,8 @@ void start_extraction(void) {
         free(embeded_bytes);
     }
 
-    embeded_bytes_extension = extract_extension(bearer_file, &extension_length);
-    generate_output_file(embeded_bytes_data, embeded_bytes_data_size, embeded_bytes_extension, extension_length);
+    embeded_bytes_extension = extract_extension(bearer_file, &embeded_bytes_extension_size);
+    generate_output_file(embeded_bytes_data, embeded_bytes_data_size, embeded_bytes_extension, embeded_bytes_extension_size);
 
     fclose(bearer_file);
     free(embeded_bytes_extension);
@@ -60,7 +58,6 @@ char *extract_extension(FILE* bearer_file, uint8_t* extension_length) {
             break;
     }
 }
-
 
 uint8_t* extract_LSB1(FILE* bearer_file, uint32_t  embeded_bytes_size){
     uint8_t* hidden_message = calloc(embeded_bytes_size + 1 ,sizeof(uint8_t));
