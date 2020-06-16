@@ -98,7 +98,7 @@ uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed) {
 }
 
 void embed_LSB1(FILE* bearer_file, FILE* out_file, uint8_t* bytes_to_embed, unsigned long length_bytes_to_embed) {
-    validate_sizes(bearer_file, length_bytes_to_embed);
+    validate_sizes(bearer_file, length_bytes_to_embed, 8);
     char c;
     uint8_t embeded_bits_in_byte = 0;
     unsigned long embeded_bytes = 0;
@@ -119,12 +119,12 @@ void embed_LSB1(FILE* bearer_file, FILE* out_file, uint8_t* bytes_to_embed, unsi
     }
 }
 
-void validate_sizes(FILE *bearer_file, unsigned long length_bytes_to_embed) {
+void validate_sizes(FILE *bearer_file, unsigned long length_bytes_to_embed, int bytes_per_byte) {
     fseek(bearer_file, 0L, SEEK_END);
     long int bearer_file_size = ftell(bearer_file);
     fseek(bearer_file, 0L, SEEK_SET);
 
-    if(length_bytes_to_embed > (bearer_file_size - BYTES_IN_HEADER)/8) {
+    if(length_bytes_to_embed > (bearer_file_size - BYTES_IN_HEADER)/bytes_per_byte) {
         fprintf(stderr, "El tamaño del archivo portador no es suficiente para embeber al mensaje.\n");
         exit(EXIT_FAILURE);
     }
