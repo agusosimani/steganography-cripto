@@ -34,7 +34,7 @@ void start_extraction(void) {
 
     if (stegobmp_config.encrypt) {
         uint32_t length_plain_text;
-        char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t mejor??
+        char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t* mejor??
         embeded_bytes = parse_text(plain_text, length_plain_text, &length_embeded_bytes, embeded_bytes_extension, &embeded_bytes_extension_size);
     }
 
