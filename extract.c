@@ -34,7 +34,7 @@ void start_extraction(void) {
 
     if (stegobmp_config.encrypt) {
         uint32_t length_plain_text;
-        unsigned char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text);
+        char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t mejor??
         embeded_bytes = parse_text(plain_text, length_plain_text, &length_embeded_bytes, embeded_bytes_extension, &embeded_bytes_extension_size);
     }
 
@@ -43,10 +43,6 @@ void start_extraction(void) {
     fclose(bearer_file);
     free(embeded_bytes_extension);
     free(embeded_bytes);
-}
-
-uint8_t *parse_text(unsigned char* plain_text, uint32_t length_plain_text, uint32_t* length_embeded_bytes, char* extension, uint8_t* extension_size) {
-    return NULL;
 }
 
 uint32_t to_big_endian(uint8_t *aux) {
@@ -101,6 +97,31 @@ void generate_output_file(uint8_t *data, uint32_t data_size, char *extension, ui
 
     fclose(output_file);
     free(output_file_name);
+}
+
+uint8_t *parse_text(unsigned char* plain_text, uint32_t length_plain_text, uint32_t* length_embeded_bytes, char* extension, uint8_t* extension_size) {
+    //Extraigo el tamaño
+    uint32_t res = 0;
+    for(int i = 0; i < FLENGTH_WORD_SIZE; i++){
+        res = res * 10 + plain_text[i] - '0';
+    }
+    *length_embeded_bytes = res;
+
+    //Extraigo la data
+    uint8_t* data = malloc(res);
+    memcpy(data, plain_text + FLENGTH_WORD_SIZE, res);
+
+    //Extraigo la extensión
+    extension = calloc(15, sizeof(char));
+    int i = 0;
+
+    for(uint32_t j = res + FLENGTH_WORD_SIZE; j < length_plain_text ; j++) {
+        extension[i] = plain_text[j];
+        i++;
+    }
+    *extension_size = i;
+
+    return data;
 }
 
 uint8_t * extract_LSB4(unsigned long * length_embeded_bytes) {
