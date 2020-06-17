@@ -230,25 +230,29 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
 
     /* con el mensaje encriptado, lo ocultamos en el archivo bmp */
 
-    uint64_t index_bytes_embed = 0;
-    uint64_t index_bits_embed = 7;
-    uint64_t jump_to = 0;
-    uint64_t index_out_bytes = FIRST_READ_BYTE;
+    uint64_t index_bytes_embed = 0;                         /* cuenta la cantidad de bytes embebidos */
+    uint64_t index_bits_embed = 7;                          /* posicion del bit a embeber */
+    uint64_t jump_to = 0;                                   /* indice del out_file donde se ocultará el bit, inicializado en 0 para luego modificarlo a FIRST_READ_BYTE */
+    uint64_t index_out_bytes = FIRST_READ_BYTE;             /* indice auxiliar para iterar sobre el out_file y saltearnos los bytes que no caen en el hoop */
     int cycles = 0;
     while (index_bytes_embed < length_bytes_to_embed) {
 
+        /* buscamos el bit mas significativo del byte a ocultar y lo ubicamos en el lugar menos significativo */
         uint8_t byte_to_embed = bytes_to_embed[index_bytes_embed];
         uint8_t bit_to_embed = (byte_to_embed & mask_array[index_bits_embed]) >> index_bits_embed;
+        /* segun el ciclo, posicionamos el bit donde no pise bits ya ocultados dentro del byte de out_file */
+        bit_to_embed = bit_to_embed << cycles;
         index_bits_embed--;
         if (index_bits_embed < 0 || index_bits_embed > 7) {
             index_bits_embed = 7;
             index_bytes_embed++;
         }
 
+        /* buscamos el indice del out_file donde queremos esconder el bit */
         jump_to = select_output_byte(bearer_file, hoop, jump_to, &cycles, &index_out_bytes, size_bearer);
         uint8_t new_pixel;
-        /* iteramos hasta el indice jump_to, donde modificaremos el pixel o byte */
-        while (index_out_bytes < jump_to) {
+        /* iteramos hasta el indice jump_to, sin modificar nada */
+        while (index_out_bytes < jump_to - 1) {
             if (cycles == 0) {
                 new_pixel = fgetc(bearer_file);
                 fputc(new_pixel, out_file);
