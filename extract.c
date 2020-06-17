@@ -22,7 +22,11 @@ void start_extraction(void) {
                 embeded_bytes_extension = extract_extension_LSB1(bearer_file, &embeded_bytes_extension_size);
             break;
         case LSB4:
-            embeded_bytes = extract_LSB4(&length_embeded_bytes);
+            length_embeded_bytes = to_big_endian(extract_LSB4(bearer_file, FLENGTH_WORD_SIZE));
+            embeded_bytes = extract_LSB4(bearer_file, length_embeded_bytes);
+            if (!stegobmp_config.encrypt) {
+                embeded_bytes_extension = extract_extension_LSB4(bearer_file,  &embeded_bytes_extension_size);
+            }
             break;
         case LSBI:
             embeded_bytes = extract_LSBI(&length_embeded_bytes);
@@ -67,7 +71,7 @@ uint8_t* extract_LSB1(FILE* bearer_file, uint32_t  embeded_bytes_size){
     return hidden_message;
 }
 
-char* extract_extension_LSB1(FILE* bearer_file, uint8_t* extension_length) {
+char * extract_extension_LSB1(FILE* bearer_file, uint8_t* extension_length) {
     uint8_t byte_counter8 = 0;
     uint8_t read_byte;
     char* extension = calloc(15, sizeof(char));
@@ -99,7 +103,7 @@ void generate_output_file(uint8_t *data, uint32_t data_size, char *extension, ui
     free(output_file_name);
 }
 
-uint8_t *parse_text(unsigned char* plain_text, uint32_t length_plain_text, uint32_t* length_embeded_bytes, char* extension, uint8_t* extension_size) {
+uint8_t * parse_text(unsigned char* plain_text, uint32_t length_plain_text, uint32_t* length_embeded_bytes, char* extension, uint8_t* extension_size) {
     //Extraigo el tamaño
     uint32_t res = 0;
     for(int i = 0; i < FLENGTH_WORD_SIZE; i++){
@@ -124,41 +128,55 @@ uint8_t *parse_text(unsigned char* plain_text, uint32_t length_plain_text, uint3
     return data;
 }
 
-uint8_t * extract_LSB4(unsigned long * length_embeded_bytes) {
+uint8_t * extract_LSB4 (FILE* bearer_file, uint32_t length_embeded_bytes) {
 
-    unsigned long index_embed = 0;
-    unsigned long index_bearer = 0;
-    unsigned long size_bearer = strlen(stegobmp_config.bearer);
+    uint32_t index_embed = 0;
     uint8_t mask = 0xF;
-    uint8_t * embeded_bytes = calloc(BLOCK, sizeof(uint8_t));
-    int blocks = 1;
+    uint8_t * embeded_bytes = calloc(length_embeded_bytes + 1, sizeof(uint8_t));
 
-    while (index_bearer < size_bearer) {
+    while (index_embed < length_embeded_bytes) {
 
         /* para extraer 1 byte, necesitamos 2 bytes del bearer */
 
-        uint8_t byte_to_extract_1 = stegobmp_config.bearer[index_bearer++];
+        uint8_t byte_to_extract_1 = fgetc(bearer_file);
         uint8_t embeded_byte_1 = mask & byte_to_extract_1;
         embeded_byte_1 = embeded_byte_1 << 4;
 
         uint8_t byte_to_extract_2, embeded_byte_2 = 0x0;
-        if (index_bearer < size_bearer) {
-            byte_to_extract_2 = stegobmp_config.bearer[index_bearer++];
-            embeded_byte_2 = mask & byte_to_extract_2;
-        }
+        byte_to_extract_2 = fgetc(bearer_file);
+        embeded_byte_2 = mask & byte_to_extract_2;
 
         embeded_bytes[index_embed] = embeded_byte_1 | embeded_byte_2;
         index_embed++;
-
-        if (index_embed >= BLOCK) {
-            blocks++;
-            uint8_t * embeded_bytes_aux = calloc(BLOCK*blocks, sizeof(uint8_t));
-            memcpy(embeded_bytes_aux, embeded_bytes, index_embed);
-            embeded_bytes = embeded_bytes_aux;
-        }
     }
+    embeded_bytes[index_embed] = 0;
 
-    *length_embeded_bytes = index_embed;
+    return embeded_bytes;
+}
+
+char * extract_extension_LSB4 (FILE* bearer_file, uint8_t * extension_length) {
+
+    uint8_t index_embed = 0;
+    uint8_t mask = 0xF;
+    char * embeded_bytes = calloc(15, sizeof(char));              // no sé por qué 15, me copié a mai
+
+    do {
+
+        /* para extraer 1 byte, necesitamos 2 bytes del bearer */
+
+        uint8_t byte_to_extract_1 = fgetc(bearer_file);
+        uint8_t embeded_byte_1 = mask & byte_to_extract_1;
+        embeded_byte_1 = embeded_byte_1 << 4;
+
+        uint8_t byte_to_extract_2, embeded_byte_2 = 0x0;
+        byte_to_extract_2 = fgetc(bearer_file);
+        embeded_byte_2 = mask & byte_to_extract_2;
+
+        embeded_bytes[index_embed] = embeded_byte_1 | embeded_byte_2;
+
+    } while (embeded_bytes[index_embed++] != 0);
+
+    *extension_length = index_embed == 0 ? index_embed : index_embed - 1;
 
     return embeded_bytes;
 }

@@ -3,6 +3,7 @@
 const uint8_t unmask_array[8] = {UNMASK_BIT_0, UNMASK_BIT_1, UNMASK_BIT_2, UNMASK_BIT_3, UNMASK_BIT_4, UNMASK_BIT_5, UNMASK_BIT_6, UNMASK_BIT_7};
 const uint8_t mask_array[8] = {MASK_BIT_0, MASK_BIT_1, MASK_BIT_2, MASK_BIT_3, MASK_BIT_4, MASK_BIT_5, MASK_BIT_6, MASK_BIT_7};
 uint8_t select_bearer_byte (uint8_t hoop, unsigned long index_bearer, unsigned long * bytes_embeded_in_bearer, int * cycles);
+long size_of_file (FILE * fp);
 
 
 void start_embedding(void) {
@@ -20,10 +21,10 @@ void start_embedding(void) {
             embed_LSB1(bearer_file, out_file, bytes_to_embed, length_bytes_to_embed);
             break;
         case LSB4:
-            embed_LSB4(bytes_to_embed, length_bytes_to_embed);
+            embed_LSB4(bearer_file, out_file, bytes_to_embed, length_bytes_to_embed);
             break;
         case LSBI:
-            embed_LSBI(bytes_to_embed, length_bytes_to_embed);
+            embed_LSBI(bearer_file, out_file, bytes_to_embed, length_bytes_to_embed);
             break;
         case steg_undefined:
             fprintf(stderr, "Debe indicar el algoritmo de esteganografiado a utilizar.\n");
@@ -145,19 +146,25 @@ void embed_LSB1aux(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed
     fclose(out_file);
 }
 
-void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
+void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
-    unsigned long size_bearer = strlen(stegobmp_config.bearer);
+    unsigned long size_bearer = size_of_file(bearer_file);
 
-    /* para que se pueda ocultar el mensaje en el bmp, por cada byte del mensaje se necesitan 2 bytes del bmp */
+     /*para que se pueda ocultar el mensaje en el bmp, por cada byte del mensaje se necesitan 2 bytes del bmp*/
     if (size_bearer*2 < length_bytes_to_embed) {
         fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %lu", size_bearer / 2);
         return;
     }
 
     unsigned long index_embed = 0;
-    unsigned long index_bearer = 0;
     uint8_t mask = 0xF0;
+
+    int header_bytes = 0;
+    while (header_bytes < BYTES_IN_HEADER) {
+        uint8_t unmodified_pixel = fgetc(bearer_file);
+        fputc(unmodified_pixel, out_file);
+        header_bytes++;
+    }
 
     while (index_embed < length_bytes_to_embed) {
 
@@ -168,14 +175,23 @@ void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_em
             uint8_t new_byte = byte_to_embed & (0xF << i * 4);
             new_byte = new_byte >> (i * 4);
 
-            /* pixel = unsigned char de 1 byte (0 a 255) */
-            uint8_t new_pixel = stegobmp_config.bearer[index_bearer];
+            /*uint8_t new_pixel = stegobmp_config.bearer[index_bearer];
             new_pixel = (new_pixel & mask) | new_byte;
             stegobmp_config.bearer[index_bearer] = new_pixel;
-            index_bearer++;
+            index_bearer++;*/
+
+            /* 1/3 pixel = unsigned char de 1 byte (0 a 255) */
+            uint8_t new_pixel = fgetc(bearer_file);
+            new_pixel = (new_pixel & mask) | new_byte;
+            fputc(new_pixel, out_file);
         }
 
         index_embed++;
+    }
+
+    while (!feof(bearer_file)) {
+        uint8_t unmodified_pixel = fgetc(bearer_file);
+        fputc(unmodified_pixel, out_file);
     }
 }
 
@@ -184,9 +200,8 @@ void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_em
     // Default values
     stegobmp_config.operation = operation_undefined;
     stegobmp_config.file_to_hide = "abcd";
-    stegobmp_config.bearer = malloc(13);
-    strcpy(stegobmp_config.bearer, "aaaaaaaaaaaa");
-    stegobmp_config.out_bitmapfile = "";
+    stegobmp_config.bearer = "/Users/jimenalozano/CLionProjects/steganography-cripto/pruebas/prueba_bearer.txt";
+    stegobmp_config.out_bitmapfile = "/Users/jimenalozano/CLionProjects/steganography-cripto/pruebas/prueba_out.txt";
     stegobmp_config.steg = steg_undefined;
     stegobmp_config.encrypt = false;
     stegobmp_config.enc_algorithm = "aes128";
@@ -195,23 +210,21 @@ void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_em
     uint8_t bytes_to_embed[] = {'a', 'b', 'c', 'd'};
     unsigned long length_bytes_to_embed = 4;
 
-    embed_LSB4(bytes_to_embed, length_bytes_to_embed);
+    FILE* bearer_file = fopen(stegobmp_config.bearer, "rb");
+    FILE* out_file = fopen(stegobmp_config.out_bitmapfile, "wb");
 
-    printf("%s\n", stegobmp_config.bearer);
-    for (int j = 0; j < strlen(stegobmp_config.bearer); j++ ) {
-        char a = stegobmp_config.bearer[j];
-        for (int i = 0; i < 8; i++) {
-            printf("%d", !!((a << i) & 0x80));
-        }
-        printf("\n");
+    embed_LSB4(bearer_file, out_file, bytes_to_embed, length_bytes_to_embed);
+
+    char c;
+    while (((c = fgetc(out_file)) || 1) && !feof(out_file)) {
+        printf("%c", c);
     }
 
-    unsigned long * lenght = malloc(sizeof(unsigned long));
-    uint8_t * embeded_bytes = extract_LSB4(lenght);
-    printf("%s\n", embeded_bytes);
+    fclose(bearer_file);
+    fclose(out_file);
 }*/
 
-void embed_LSBI(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
+void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
     /* usaremos como clave los 6 primeros bytes (48 bits) de la imagen portadora */
     uint8_t * key = malloc(6);
@@ -318,3 +331,16 @@ uint8_t select_bearer_byte (uint8_t hoop, unsigned long index_bearer, unsigned l
         printf("\n");
     }
 }*/
+
+long size_of_file (FILE * fp) {
+
+    fseek(fp, 0L, SEEK_END);
+
+    // calculating the size of the file
+    long int res = ftell(fp);
+
+    // go back to the beginning
+    rewind(fp);
+
+    return res;
+}
