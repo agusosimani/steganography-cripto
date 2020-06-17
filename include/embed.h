@@ -23,6 +23,7 @@
 #define MASK_BIT_7 0x80                 /* 10000000 */
 
 #define BYTES_IN_HEADER 54
+#define BYTES_IN_KEY 6
 
 void start_embedding(void);
 uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed);
