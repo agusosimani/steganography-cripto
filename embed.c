@@ -5,7 +5,6 @@ const uint8_t mask_array[8] = {MASK_BIT_0, MASK_BIT_1, MASK_BIT_2, MASK_BIT_3, M
 uint8_t select_bearer_byte (uint8_t hoop, unsigned long index_bearer, unsigned long * bytes_embeded_in_bearer, int * cycles);
 long size_of_file (FILE * fp);
 
-
 void start_embedding(void) {
     // Check if file_to_hide fits in bearer
     // TODO
@@ -100,6 +99,7 @@ uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed) {
 }
 
 void embed_LSB1(FILE* bearer_file, FILE* out_file, uint8_t* bytes_to_embed, unsigned long length_bytes_to_embed) {
+    validate_sizes(bearer_file, length_bytes_to_embed, 8);
     char c;
     uint8_t embeded_bits_in_byte = 0;
     unsigned long embeded_bytes = 0;
@@ -120,30 +120,15 @@ void embed_LSB1(FILE* bearer_file, FILE* out_file, uint8_t* bytes_to_embed, unsi
     }
 }
 
+void validate_sizes(FILE *bearer_file, unsigned long length_bytes_to_embed, int bytes_per_byte) {
+    fseek(bearer_file, 0L, SEEK_END);
+    long int bearer_file_size = ftell(bearer_file);
+    fseek(bearer_file, 0L, SEEK_SET);
 
-void embed_LSB1aux(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
-    FILE* bearer_file = fopen(stegobmp_config.bearer, "rb");
-    FILE* out_file = fopen(stegobmp_config.out_bitmapfile, "wb");
-    char c;
-    unsigned long embeded_bits_in_byte = 0;
-    unsigned long embeded_bytes = 0;
-    unsigned long header_bytes = 0;
-    while (((c = fgetc(bearer_file)) || 1) && !feof(bearer_file)) {
-        if(embeded_bytes < length_bytes_to_embed && header_bytes >= BYTES_IN_HEADER) {
-            char new_byte = (c & ~0x1) | ((bytes_to_embed[embeded_bytes] >> (7 - embeded_bits_in_byte)) & 1);
-            fputc(new_byte, out_file);
-            embeded_bits_in_byte++;
-            if(embeded_bits_in_byte % 8 == 0) {
-                embeded_bytes++;
-                embeded_bits_in_byte = 0;
-            }
-        } else {
-            fputc(c, out_file);
-        }
-        header_bytes++;
+    if(length_bytes_to_embed > (bearer_file_size - BYTES_IN_HEADER)/bytes_per_byte) {
+        fprintf(stderr, "El tamaño del archivo portador no es suficiente para embeber al mensaje.\n");
+        exit(EXIT_FAILURE);
     }
-    fclose(bearer_file);
-    fclose(out_file);
 }
 
 void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
