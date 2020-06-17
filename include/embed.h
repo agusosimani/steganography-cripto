@@ -23,12 +23,14 @@
 #define MASK_BIT_7 0x80                 /* 10000000 */
 
 #define BYTES_IN_HEADER 54
+#define BYTES_IN_KEY 6
+#define FIRST_READ_BYTE (BYTES_IN_HEADER + BYTES_IN_KEY)
 
 void start_embedding(void);
 uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed);
 void embed_LSB1(FILE *pFile, FILE *pFile1, uint8_t *string, unsigned long i);
-void embed_LSB4(const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed);
-void embed_LSBI(uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed);
+void embed_LSB4(FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed);
+void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed);
 void validate_sizes(FILE *pFile, unsigned long embed, int b);
 
 #endif //EMBED_H
