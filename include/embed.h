@@ -24,6 +24,7 @@
 
 #define BYTES_IN_HEADER 54
 #define BYTES_IN_KEY 6
+#define FIRST_READ_BYTE (BYTES_IN_HEADER + BYTES_IN_KEY)
 
 void start_embedding(void);
 uint8_t * get_bytes_to_embed(unsigned long * length_bytes_to_embed);

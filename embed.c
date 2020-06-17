@@ -220,7 +220,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     // TODO armar el mensaje a encriptar
     // TODO encriptar con RC4
 
-    uint64_t size_bearer = size_of_file(bearer_file) - BYTES_IN_HEADER - BYTES_IN_KEY;
+    uint64_t size_bearer = size_of_file(bearer_file) - FIRST_READ_BYTE;
 
     /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
     if (size_bearer < length_bytes_to_embed) {
@@ -233,7 +233,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     uint64_t index_bytes_embed = 0;
     uint64_t index_bits_embed = 7;
     uint64_t jump_to = 0;
-    uint64_t index_out_bytes = BYTES_IN_HEADER + BYTES_IN_KEY;
+    uint64_t index_out_bytes = FIRST_READ_BYTE;
     int cycles = 0;
     while (index_bytes_embed < length_bytes_to_embed) {
 
@@ -264,9 +264,12 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
 
     }
 
-    while (!feof(bearer_file)) {
-        uint8_t unmodified_pixel = fgetc(bearer_file);
-        fputc(unmodified_pixel, out_file);
+    /* si hay bytes del bearer que no terminaron de copiarse */
+    if (cycles == 0 && jump_to < size_bearer) {
+        while (!feof(bearer_file)) {
+            uint8_t unmodified_pixel = fgetc(bearer_file);
+            fputc(unmodified_pixel, out_file);
+        }
     }
 
 }
@@ -275,17 +278,17 @@ uint64_t select_output_byte (FILE * bearer_file, uint8_t hoop, uint64_t jump_fro
                              uint64_t * index_out_bytes, uint64_t size) {
 
     if (jump_from == 0) {
-        return BYTES_IN_HEADER + BYTES_IN_KEY;
+        return FIRST_READ_BYTE;
     }
 
     uint64_t jump = jump_from + hoop;
     if (jump >= size) {
 
-        jump = (jump - size) + BYTES_IN_HEADER + BYTES_IN_KEY;
+        jump = (jump - size) + FIRST_READ_BYTE;
         *cycles = *cycles + 1;
-        *index_out_bytes = BYTES_IN_HEADER + BYTES_IN_KEY;
+        *index_out_bytes = FIRST_READ_BYTE;
         int restart_bearer = 0;
-        while (restart_bearer < BYTES_IN_HEADER + BYTES_IN_KEY) {
+        while (restart_bearer < FIRST_READ_BYTE) {
             fgetc(bearer_file);
             restart_bearer++;
         }
