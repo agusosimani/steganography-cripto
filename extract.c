@@ -2,8 +2,6 @@
 
 uint32_t to_big_endian(uint8_t *aux);
 
-uint8_t *parse_text(unsigned char *text, uint32_t text1, uint32_t *pInt, char *extension, uint8_t *string);
-
 void start_extraction(void) {
     uint32_t length_embeded_bytes = 0;
     uint8_t * embeded_bytes = 0;
@@ -37,9 +35,21 @@ void start_extraction(void) {
     }
 
     if (stegobmp_config.encrypt) {
-        uint32_t length_plain_text;
-        char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t* mejor??
-        embeded_bytes = parse_text(plain_text, length_plain_text, &length_embeded_bytes, embeded_bytes_extension, &embeded_bytes_extension_size);
+        int length_plain_text;
+        unsigned char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t* mejor??
+
+        //Extraigo el tamaño
+        memcpy(&length_embeded_bytes, plain_text, sizeof(uint32_t));
+        length_embeded_bytes = bswap_32(length_embeded_bytes);
+
+        //Extraigo la data
+        embeded_bytes = plain_text + sizeof(uint32_t);
+
+        //Extraigo la extensión
+        embeded_bytes_extension = (char *) embeded_bytes + length_embeded_bytes;
+        embeded_bytes_extension_size = strlen(embeded_bytes_extension);
+
+        embeded_bytes_extension[embeded_bytes_extension_size] = 0;
     }
 
     generate_output_file(embeded_bytes, length_embeded_bytes, embeded_bytes_extension, embeded_bytes_extension_size);
@@ -93,39 +103,14 @@ char * extract_extension_LSB1(FILE* bearer_file, uint8_t* extension_length) {
 
 void generate_output_file(uint8_t *data, uint32_t data_size, char *extension, uint8_t extension_length) {
     char* output_file_name  = malloc(strlen (stegobmp_config.out_bitmapfile) + 1 + extension_length);
-    memcpy(output_file_name, stegobmp_config.out_bitmapfile, strlen(stegobmp_config.out_bitmapfile) + 1);
+    strcpy(output_file_name, stegobmp_config.out_bitmapfile);
     strcat(output_file_name, extension);
 
-    FILE* output_file = fopen(output_file_name, "w");
+    FILE* output_file = fopen(output_file_name, "wb");
     fwrite(data , 1, data_size, output_file);
 
     fclose(output_file);
     free(output_file_name);
-}
-
-uint8_t * parse_text(unsigned char* plain_text, uint32_t length_plain_text, uint32_t* length_embeded_bytes, char* extension, uint8_t* extension_size) {
-    //Extraigo el tamaño
-    uint32_t res = 0;
-    for(int i = 0; i < FLENGTH_WORD_SIZE; i++){
-        res = res * 10 + plain_text[i] - '0';
-    }
-    *length_embeded_bytes = res;
-
-    //Extraigo la data
-    uint8_t* data = malloc(res);
-    memcpy(data, plain_text + FLENGTH_WORD_SIZE, res);
-
-    //Extraigo la extensión
-    extension = calloc(15, sizeof(char));
-    int i = 0;
-
-    for(uint32_t j = res + FLENGTH_WORD_SIZE; j < length_plain_text ; j++) {
-        extension[i] = plain_text[j];
-        i++;
-    }
-    *extension_size = i;
-
-    return data;
 }
 
 uint8_t * extract_LSB4 (FILE* bearer_file, uint32_t length_embeded_bytes) {
