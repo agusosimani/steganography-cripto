@@ -2,8 +2,8 @@
 
 const uint8_t unmask_array[8] = {UNMASK_BIT_0, UNMASK_BIT_1, UNMASK_BIT_2, UNMASK_BIT_3, UNMASK_BIT_4, UNMASK_BIT_5, UNMASK_BIT_6, UNMASK_BIT_7};
 const uint8_t mask_array[8] = {MASK_BIT_0, MASK_BIT_1, MASK_BIT_2, MASK_BIT_3, MASK_BIT_4, MASK_BIT_5, MASK_BIT_6, MASK_BIT_7};
-uint64_t select_output_byte (FILE * bearer_file, uint8_t hoop, uint64_t jump_from, int * cycles,
-                             uint64_t * index_out_bytes, uint64_t size);
+uint64_t select_output_byte (/*FILE * bearer_file, */uint8_t hoop, uint64_t jump_from, int * cycles,
+                             /*uint64_t * index_out_bytes,*/ uint64_t size);
 long size_of_file (FILE * fp);
 
 void start_embedding(void) {
@@ -183,21 +183,32 @@ void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_emb
 
 void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
+    uint64_t size_of_bearer = size_of_file(bearer_file);
+    char * bearer_to_embed = malloc(size_of_bearer);
+    size_t number_of_bytes_read = fread(bearer_to_embed, sizeof(char), size_of_bearer, bearer_file);
+
     /* salteamos los bytes del header */
-    int header_bytes = 0;
+    /*int header_bytes = 0;
     while (header_bytes < BYTES_IN_HEADER) {
         uint8_t unmodified_pixel = fgetc(bearer_file);
         fputc(unmodified_pixel, out_file);
         header_bytes++;
-    }
+    }*/
 
     /* usaremos como clave los 6 primeros bytes (48 bits) de la imagen portadora */
-    uint8_t key_bytes = 0;
+    /*uint8_t key_bytes = 0;*/
     uint8_t * key = malloc(BYTES_IN_KEY);
-    while (key_bytes < BYTES_IN_KEY) {
+    /*while (key_bytes < BYTES_IN_KEY) {
         uint8_t key_byte = fgetc(bearer_file);
-        fputc(key_byte, out_file);                  /* not sure */
+        fputc(key_byte, out_file);
         key[key_bytes++] = key_byte;
+    }*/
+
+    uint8_t key_bytes = BYTES_IN_HEADER;
+    while (key_bytes < BYTES_IN_KEY + BYTES_IN_HEADER ) {
+        uint8_t byte = bearer_to_embed[key_bytes - BYTES_IN_HEADER];
+        key[key_bytes - BYTES_IN_HEADER] = byte;
+        key_bytes++;
     }
 
     uint8_t hoop = key[0];
@@ -220,11 +231,9 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     // TODO armar el mensaje a encriptar
     // TODO encriptar con RC4
 
-    uint64_t size_bearer = size_of_file(bearer_file) - FIRST_READ_BYTE;
-
     /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
-    if (size_bearer < length_bytes_to_embed) {
-        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %lu", size_bearer);
+    if (size_of_bearer - FIRST_READ_BYTE < length_bytes_to_embed) {
+        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %l", size_of_bearer - FIRST_READ_BYTE);
         return;
     }
 
@@ -233,7 +242,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     uint64_t index_bytes_embed = 0;                         /* cuenta la cantidad de bytes embebidos */
     uint64_t index_bits_embed = 7;                          /* posicion del bit a embeber */
     uint64_t jump_to = 0;                                   /* indice del out_file donde se ocultará el bit, inicializado en 0 para luego modificarlo a FIRST_READ_BYTE */
-    uint64_t index_out_bytes = FIRST_READ_BYTE;             /* indice auxiliar para iterar sobre el out_file y saltearnos los bytes que no caen en el hoop */
+    //uint64_t index_out_bytes = FIRST_READ_BYTE;             /* indice auxiliar para iterar sobre el out_file y saltearnos los bytes que no caen en el hoop */
     int cycles = 0;
     while (index_bytes_embed < length_bytes_to_embed) {
 
@@ -249,37 +258,37 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
         }
 
         /* buscamos el indice del out_file donde queremos esconder el bit */
-        jump_to = select_output_byte(bearer_file, hoop, jump_to, &cycles, &index_out_bytes, size_bearer);
-        uint8_t new_pixel;
+        jump_to = select_output_byte(/*bearer_file, */hoop, jump_to, &cycles, /*&index_out_bytes,*/ size_of_bearer);
         /* iteramos hasta el indice jump_to, sin modificar nada */
-        while (index_out_bytes < jump_to - 1) {
+        /*while (index_out_bytes < jump_to - 1) {
             if (cycles == 0) {
                 new_pixel = fgetc(bearer_file);
                 fputc(new_pixel, out_file);
             } else {
-                /* si no es el primer ciclo, itero por los bytes del out_file hasta buscar el pixel que quiero */
                 fgetc(out_file);
             }
             index_out_bytes++;
-        }
-        new_pixel = fgetc(bearer_file);
+        }*/
+        uint8_t new_pixel = bearer_to_embed[jump_to];
         new_pixel = (new_pixel & unmask_array[cycles]) | bit_to_embed;
-        fputc(new_pixel, out_file);
+        bearer_to_embed[jump_to] = new_pixel;
 
     }
 
     /* si hay bytes del bearer que no terminaron de copiarse */
-    if (cycles == 0 && jump_to < size_bearer) {
+    /*if (cycles == 0 && jump_to < size_of_bearer) {
         while (!feof(bearer_file)) {
             uint8_t unmodified_pixel = fgetc(bearer_file);
             fputc(unmodified_pixel, out_file);
         }
-    }
+    }*/
+
+    fwrite(bearer_to_embed, sizeof(char), size_of_bearer, out_file);
 
 }
 
-uint64_t select_output_byte (FILE * bearer_file, uint8_t hoop, uint64_t jump_from, int * cycles,
-                             uint64_t * index_out_bytes, uint64_t size) {
+uint64_t select_output_byte (/*FILE * bearer_file,*/ uint8_t hoop, uint64_t jump_from, int * cycles,
+                             /*uint64_t * index_out_bytes,*/ uint64_t size) {
 
     if (jump_from == 0) {
         return FIRST_READ_BYTE;
@@ -290,12 +299,12 @@ uint64_t select_output_byte (FILE * bearer_file, uint8_t hoop, uint64_t jump_fro
 
         jump = (jump - size) + FIRST_READ_BYTE;
         *cycles = *cycles + 1;
-        *index_out_bytes = FIRST_READ_BYTE;
-        int restart_bearer = 0;
+        //*index_out_bytes = FIRST_READ_BYTE;
+        /*int restart_bearer = 0;
         while (restart_bearer < FIRST_READ_BYTE) {
             fgetc(bearer_file);
             restart_bearer++;
-        }
+        }*/
     }
 
     return jump;
