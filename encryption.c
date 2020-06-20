@@ -58,7 +58,7 @@ void derive_from_password(const EVP_CIPHER * evp_cipher, unsigned char * key, un
     EVP_BytesToKey(evp_cipher, dgst, salt, (unsigned char *)stegobmp_config.pass, (int)strlen(stegobmp_config.pass),1, key, IV);
 }
 
-unsigned char * encrypt_ (uint8_t * plain_text, unsigned long length_plain_text, int * length_cipher) {
+unsigned char * encrypt_(uint8_t * plain_text, unsigned long length_plain_text, int * length_cipher) {
     // Get structs needed for symmetric cipher with evp.h (Initialize context)
     const EVP_CIPHER * evp_cipher = get_evp_cipher();
     EVP_CIPHER_CTX * evp_cipher_ctx = EVP_CIPHER_CTX_new();
@@ -159,4 +159,41 @@ uint8_t * encrypt_rc4(const uint8_t * plain_text, unsigned long length_plain_tex
         cipher[n] = plain_text[n] ^ S[t];
     }
     return cipher;
+}
+
+uint8_t * decrypt_rc4(const uint8_t * cipher, unsigned long length_cipher, const uint8_t * key, unsigned long length_key) {
+    unsigned char T[N];
+    unsigned char S[N];
+    unsigned char aux_swap;
+    int i=0, j=0, t=0;
+
+    uint8_t * plain_text = malloc(length_cipher);
+
+    for (i = 0; i < N; i++) {
+        S[i] = i;
+        T[i] = key[i % length_key];
+    }
+
+    for (i = 0 ; i < N; i++) {
+        j = (j + S[i] + T[i] ) % N;
+
+        aux_swap = S[j];
+        S[j] = S[i];
+        S[i] = aux_swap;
+    }
+
+    i=0, j=0;
+    for(size_t n=0; n < length_cipher ; n++) {
+        i = (i+1) % N;
+        j = (j+S[i]) % N;
+
+        aux_swap = S[j];
+        S[j] = S[i];
+        S[i] = aux_swap;
+
+        t = (S[i]+S[j]) % N;
+
+        plain_text[n] = cipher[n] ^ S[t];
+    }
+    return plain_text;
 }
