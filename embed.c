@@ -226,7 +226,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     }
     /* hoop puede ser cualquiera de [2, 4, 8, 16, 32, 64, 128, 256] */
 
-    hoop = 256;
+    /*hoop = 256;*/
 
     // TODO armar el mensaje a encriptar
     // TODO encriptar con RC4
