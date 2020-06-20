@@ -91,7 +91,7 @@ unsigned char * encrypt_ (uint8_t * plain_text, unsigned long length_plain_text,
     return cipher;
 }
 
-unsigned char * decrypt(uint8_t * cipher, unsigned long length_cipher, int * length_plain_text) {
+unsigned char * gdecrypt(uint8_t * cipher, unsigned long length_cipher, int * length_plain_text) {
     // Get structs needed for symmetric cipher with evp.h (Initialize context)
     const EVP_CIPHER * evp_cipher = get_evp_cipher();
     EVP_CIPHER_CTX * evp_cipher_ctx = EVP_CIPHER_CTX_new();
