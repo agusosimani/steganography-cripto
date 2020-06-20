@@ -228,8 +228,8 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
 
     /*hoop = 256;*/
 
-    // TODO armar el mensaje a encriptar
-    // TODO encriptar con RC4
+    uint8_t * bytes_to_embed_encrypted = encrypt_rc4(bytes_to_embed, length_bytes_to_embed, key, BYTES_IN_KEY);
+    free(key);
 
     /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
     if ((size_of_bearer - FIRST_READ_BYTE) < length_bytes_to_embed) {
@@ -248,7 +248,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     while (index_bytes_embed < length_bytes_to_embed) {
 
         /* buscamos el bit mas significativo del byte a ocultar y lo ubicamos en el lugar menos significativo */
-        uint8_t byte_to_embed = bytes_to_embed[index_bytes_embed];
+        uint8_t byte_to_embed = bytes_to_embed_encrypted[index_bytes_embed];
         uint8_t bit_to_embed = (byte_to_embed & mask_array[index_bits_embed]) >> index_bits_embed;
         /* segun el ciclo, posicionamos el bit donde no pise bits ya ocultados dentro del byte de out_file */
         if (index_bytes_bearer_modified > size_of_bearer - FIRST_READ_BYTE) {
@@ -291,7 +291,8 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     }*/
 
     fwrite(bearer_to_embed, sizeof(char), size_of_bearer, out_file);
-
+    free(bearer_to_embed);
+    free(bytes_to_embed_encrypted);
 }
 
 uint64_t select_output_byte (/*FILE * bearer_file,*/ uint8_t hoop, uint64_t jump_from, int * cycles,
