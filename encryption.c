@@ -123,3 +123,40 @@ unsigned char * decrypt(uint8_t * cipher, unsigned long length_cipher, int * len
 
     return plain_text;
 }
+
+uint8_t * encrypt_rc4(const uint8_t * plain_text, unsigned long length_plain_text, const uint8_t * key, unsigned long length_key) {
+    unsigned char T[N];
+    unsigned char S[N];
+    unsigned char aux_swap;
+    int i=0, j=0, t=0;
+
+    uint8_t * cipher = malloc(length_plain_text);
+
+    for (i = 0; i < N; i++) {
+        S[i] = i;
+        T[i] = key[i % length_key];
+    }
+
+    for (i = 0 ; i < N; i++) {
+        j = (j + S[i] + T[i] ) % N;
+
+        aux_swap = S[j];
+        S[j] = S[i];
+        S[i] = aux_swap;
+    }
+
+    i=0, j=0;
+    for(size_t n=0; n < length_plain_text ; n++) {
+        i = (i+1) % N;
+        j = (j+S[i]) % N;
+
+        aux_swap = S[j];
+        S[j] = S[i];
+        S[i] = aux_swap;
+
+        t = (S[i]+S[j]) % N;
+
+        cipher[n] = plain_text[n] ^ S[t];
+    }
+    return cipher;
+}
