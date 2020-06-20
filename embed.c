@@ -229,7 +229,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     hoop = 2;
 
     uint8_t * bytes_to_embed_encrypted = encrypt_rc4(bytes_to_embed, length_bytes_to_embed, key, BYTES_IN_KEY);
-    free(bytes_to_embed);
+    free(key);
 
     /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
     if (size_of_bearer - FIRST_READ_BYTE < length_bytes_to_embed) {
@@ -284,7 +284,8 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     }*/
 
     fwrite(bearer_to_embed, sizeof(char), size_of_bearer, out_file);
-
+    free(bearer_to_embed);
+    free(bytes_to_embed_encrypted);
 }
 
 uint64_t select_output_byte (/*FILE * bearer_file,*/ uint8_t hoop, uint64_t jump_from, int * cycles,
