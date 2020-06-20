@@ -1,4 +1,4 @@
-// a) As Mac OS X does not have byteswap.h
+// As Mac OS X does not have byteswap.h
 // needed this for a c util I had used over the years on linux. 
 // did not find a solution to stopgap via macports, sadly, but this did the trick
 
@@ -12,13 +12,5 @@
 (((uint32_t)bswap_16((uint16_t)((value) & 0xffff)) << 16) | \
 (uint32_t)bswap_16((uint16_t)((value) >> 16)))
 
-#define bswap_64(value) \
-(((uint64_t)bswap_32((uint32_t)((value) & 0xffffffff)) \
-<< 32) | \
-(uint64_t)bswap_32((uint32_t)((value) >> 32)))
 #endif
-/*
 
-
-(b) change this line 357 to
-while((c = getopt(argc, argv, "hvi::o::p:k::")) != -1){*/
