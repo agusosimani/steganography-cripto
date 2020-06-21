@@ -211,7 +211,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
         key_bytes++;
     }
 
-    uint8_t hoop = key[0];
+    int hoop = key[0];
     uint8_t aux = 0;
     bool found = false;
     for (int i = 0; i < 8 && !found; i++) {
@@ -226,19 +226,20 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     }
     /* hoop puede ser cualquiera de [2, 4, 8, 16, 32, 64, 128, 256] */
 
-    hoop = 2;
+    /*hoop = 256;*/
 
     uint8_t * bytes_to_embed_encrypted = encrypt_rc4(bytes_to_embed, length_bytes_to_embed, key, BYTES_IN_KEY);
     free(key);
 
     /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
-    if (size_of_bearer - FIRST_READ_BYTE < length_bytes_to_embed) {
-        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %l", size_of_bearer - FIRST_READ_BYTE);
+    if ((size_of_bearer - FIRST_READ_BYTE) < length_bytes_to_embed) {
+        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu", (size_of_bearer - FIRST_READ_BYTE));
         return;
     }
 
     /* con el mensaje encriptado, lo ocultamos en el archivo bmp */
 
+    uint64_t index_bytes_bearer_modified = 0;
     uint64_t index_bytes_embed = 0;                         /* cuenta la cantidad de bytes embebidos */
     uint64_t index_bits_embed = 7;                          /* posicion del bit a embeber */
     uint64_t jump_to = 0;                                   /* indice del out_file donde se ocultará el bit, inicializado en 0 para luego modificarlo a FIRST_READ_BYTE */
@@ -250,7 +251,9 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
         uint8_t byte_to_embed = bytes_to_embed_encrypted[index_bytes_embed];
         uint8_t bit_to_embed = (byte_to_embed & mask_array[index_bits_embed]) >> index_bits_embed;
         /* segun el ciclo, posicionamos el bit donde no pise bits ya ocultados dentro del byte de out_file */
-        bit_to_embed = bit_to_embed << cycles;
+        if (index_bytes_bearer_modified > size_of_bearer - FIRST_READ_BYTE) {
+            bit_to_embed = bit_to_embed << cycles;
+        }
         index_bits_embed--;
         if (index_bits_embed < 0 || index_bits_embed > 7) {
             index_bits_embed = 7;
@@ -272,6 +275,10 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
         uint8_t new_pixel = bearer_to_embed[jump_to];
         new_pixel = (new_pixel & unmask_array[cycles]) | bit_to_embed;
         bearer_to_embed[jump_to] = new_pixel;
+        index_bytes_bearer_modified++;
+        if (index_bytes_bearer_modified % (size_of_bearer - FIRST_READ_BYTE)  == 0) {
+            cycles = cycles + 1;
+        }
 
     }
 
@@ -299,7 +306,7 @@ uint64_t select_output_byte (/*FILE * bearer_file,*/ uint8_t hoop, uint64_t jump
     if (jump >= size) {
 
         jump = (jump - size) + FIRST_READ_BYTE;
-        *cycles = *cycles + 1;
+
         //*index_out_bytes = FIRST_READ_BYTE;
         /*int restart_bearer = 0;
         while (restart_bearer < FIRST_READ_BYTE) {
