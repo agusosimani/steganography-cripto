@@ -11,3 +11,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,fuzzer-no-link -fsani
 
 add_executable(stegobmp main.c include/main.h embed.c include/embed.h extract.c include/extract.h encryption.c include/encryption.h)
 target_link_libraries(stegobmp ${OPENSSL_LIBRARIES})
+target_link_libraries(stegobmp m)

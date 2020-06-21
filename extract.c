@@ -1,4 +1,5 @@
 #include "include/extract.h"
+#include<math.h>
 
 uint32_t to_big_endian(uint8_t *aux);
 
@@ -27,7 +28,7 @@ void start_extraction(void) {
             }
             break;
         case LSBI:
-            embeded_bytes = extract_LSBI(&length_embeded_bytes);
+            embeded_bytes = extract_LSBI(bearer_file, &length_embeded_bytes);
             break;
         case steg_undefined:
             fprintf(stderr, "Debe indicar el algoritmo de esteganografiado utilizado.\n");
@@ -35,21 +36,21 @@ void start_extraction(void) {
     }
 
     if (stegobmp_config.encrypt) {
-        int length_plain_text;
-        unsigned char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t* mejor??
-
-        //Extraigo el tamaño
-        memcpy(&length_embeded_bytes, plain_text, sizeof(uint32_t));
-        length_embeded_bytes = bswap_32(length_embeded_bytes);
-
-        //Extraigo la data
-        embeded_bytes = plain_text + sizeof(uint32_t);
-
-        //Extraigo la extensión
-        embeded_bytes_extension = (char *) embeded_bytes + length_embeded_bytes;
-        embeded_bytes_extension_size = strlen(embeded_bytes_extension);
-
-        embeded_bytes_extension[embeded_bytes_extension_size] = 0;
+//        int length_plain_text;
+//        unsigned char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t* mejor??
+//
+//        //Extraigo el tamaño
+//        memcpy(&length_embeded_bytes, plain_text, sizeof(uint32_t));
+//        length_embeded_bytes = bswap_32(length_embeded_bytes);
+//
+//        //Extraigo la data
+//        embeded_bytes = plain_text + sizeof(uint32_t);
+//
+//        //Extraigo la extensión
+//        embeded_bytes_extension = (char *) embeded_bytes + length_embeded_bytes;
+//        embeded_bytes_extension_size = strlen(embeded_bytes_extension);
+//
+//        embeded_bytes_extension[embeded_bytes_extension_size] = 0;
     }
 
     generate_output_file(embeded_bytes, length_embeded_bytes, embeded_bytes_extension, embeded_bytes_extension_size);
@@ -80,6 +81,45 @@ uint8_t* extract_LSB1(FILE* bearer_file, uint32_t  embeded_bytes_size){
     hidden_message[byte_counter32] = 0;
     return hidden_message;
 }
+
+uint8_t * extract_LSBI(FILE* bearer_file, unsigned long * length_embeded_bytes) {
+    uint8_t read_byte;
+
+    //levanto la clave
+    uint8_t key[6];
+    uint8_t byte_counter8 = 0;
+
+    while (byte_counter8 < 6) {
+        key[byte_counter8] = (uint8_t) fgetc(bearer_file);
+        byte_counter8++;
+    }
+
+    //levanto el hop
+    read_byte = key[0];
+    int ndx = 0, hop;
+
+    if(read_byte == 0) {
+        hop = 256;
+    } else {
+        while (1 < read_byte) {
+            read_byte = (read_byte >> 1);
+            ndx++;
+        }
+        hop = pow(2,ndx);
+    }
+
+
+
+
+
+    //levanto la longitud del mensaje escondido
+
+
+    printf("hola");
+    // TODO
+    return NULL;
+}
+
 
 char * extract_extension_LSB1(FILE* bearer_file, uint8_t* extension_length) {
     uint8_t byte_counter8 = 0;
@@ -166,7 +206,3 @@ char * extract_extension_LSB4 (FILE* bearer_file, uint8_t * extension_length) {
     return embeded_bytes;
 }
 
-uint8_t * extract_LSBI(unsigned long * length_embeded_bytes) {
-    // TODO
-    return NULL;
-}
