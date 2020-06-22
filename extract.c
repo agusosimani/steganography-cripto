@@ -60,7 +60,9 @@ void start_extraction(void) {
 }
 
 uint32_t to_big_endian(uint8_t *aux) {
-    return (aux[0] << 24) + (aux[1] << 16) + (aux[2] << 8) + aux[3];
+    uint32_t ret = (aux[0] << 24) + (aux[1] << 16) + (aux[2] << 8) + aux[3];
+    free(aux);
+    return ret;
 }
 
 uint8_t* extract_LSB1(FILE* bearer_file, uint32_t  embeded_bytes_size){
