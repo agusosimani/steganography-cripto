@@ -137,7 +137,7 @@ void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_emb
 
      /*para que se pueda ocultar el mensaje en el bmp, por cada byte del mensaje se necesitan 2 bytes del bmp*/
     if ((size_bearer - BYTES_IN_HEADER)*2 < length_bytes_to_embed) {
-        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %lu", (size_bearer - BYTES_IN_HEADER) / 2);
+        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %lu.\n", (size_bearer - BYTES_IN_HEADER) / 2);
         return;
     }
 
@@ -182,11 +182,16 @@ void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_emb
 
 void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
+    if (bearer_file == NULL) {
+        fprintf(stderr, "ERROR: El archivo portador no es válido.\n");
+        return;
+    }
+
     uint64_t size_of_bearer = size_of_file(bearer_file);
     char * bearer_to_embed = malloc(size_of_bearer);
     size_t number_of_bytes_read = fread(bearer_to_embed, sizeof(char), size_of_bearer, bearer_file);
     if (size_of_bearer != number_of_bytes_read) {
-        fprintf(stderr, "ERROR: La lectura del archivo portador falló.");
+        fprintf(stderr, "ERROR: La lectura del archivo portador falló.\n");
         return;
     }
 
@@ -219,7 +224,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
 
     /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
     if ((size_of_bearer - FIRST_READ_BYTE) < length_bytes_to_embed) {
-        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu", (size_of_bearer - FIRST_READ_BYTE));
+        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu.\n", (size_of_bearer - FIRST_READ_BYTE));
         return;
     }
 

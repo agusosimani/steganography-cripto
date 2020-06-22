@@ -32,5 +32,6 @@ void embed_LSB1(FILE *pFile, FILE *pFile1, uint8_t *string, unsigned long i);
 void embed_LSB4(FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed);
 void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed);
 void validate_sizes(FILE *pFile, unsigned long embed, int b);
+long size_of_file (FILE * fp);
 
 #endif //EMBED_H

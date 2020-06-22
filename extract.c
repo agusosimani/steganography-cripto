@@ -109,6 +109,11 @@ void generate_output_file(uint8_t *data, uint32_t data_size, char *extension, ui
     strcat(output_file_name, extension);
 
     FILE* output_file = fopen(output_file_name, "wb");
+    if (output_file == NULL) {
+        fprintf(stderr, "ERROR: No se puede extraer la información con los parámetros seleccionados.\n");
+        return;
+    }
+
     fwrite(data , 1, data_size, output_file);
 
     fclose(output_file);
@@ -120,6 +125,11 @@ uint8_t * extract_LSB4 (FILE* bearer_file, uint32_t length_embeded_bytes) {
     uint32_t index_embed = 0;
     uint8_t mask = 0xF;
     uint8_t * embeded_bytes = calloc(length_embeded_bytes + 1, sizeof(uint8_t));
+    uint64_t size_of_bearer = size_of_file(bearer_file);
+    if (size_of_bearer < length_embeded_bytes) {
+        fprintf(stderr, "ERROR: El tamaño del portador es menor al mensaje que se desea extraer.\n");
+        return NULL;
+    }
 
     while (index_embed < length_embeded_bytes) {
 
