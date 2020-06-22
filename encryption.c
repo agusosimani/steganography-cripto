@@ -161,37 +161,46 @@ uint8_t * encrypt_rc4(const uint8_t * plain_text, unsigned long length_plain_tex
     return cipher;
 }
 
-uint8_t * decrypt_rc4(const uint8_t * cipher, unsigned long length_cipher, const uint8_t * key, unsigned long length_key) {
-    unsigned char T[N];
-    unsigned char S[N];
+unsigned char T[N];
+unsigned char S[N];
+int global_i;
+int global_j;
+
+uint8_t * decrypt_rc4(const uint8_t * cipher, unsigned long length_cipher, const uint8_t * key, unsigned long length_key, bool continue_decrypt) {
     unsigned char aux_swap;
     int i=0, j=0, t=0;
 
     uint8_t * plain_text = malloc(length_cipher);
 
-    for (i = 0; i < N; i++) {
-        S[i] = i;
-        T[i] = key[i % length_key];
+    if (!continue_decrypt) {
+        // Initialize S and T if it's a new decryption
+        for (i = 0; i < N; i++) {
+            S[i] = i;
+            T[i] = key[i % length_key];
+        }
+
+        for (i = 0 ; i < N; i++) {
+            j = (j + S[i] + T[i] ) % N;
+
+            aux_swap = S[j];
+            S[j] = S[i];
+            S[i] = aux_swap;
+        }
     }
 
-    for (i = 0 ; i < N; i++) {
-        j = (j + S[i] + T[i] ) % N;
-
-        aux_swap = S[j];
-        S[j] = S[i];
-        S[i] = aux_swap;
+    if (!continue_decrypt) {
+        global_i=0, global_j=0;
     }
 
-    i=0, j=0;
     for(size_t n=0; n < length_cipher ; n++) {
-        i = (i+1) % N;
-        j = (j+S[i]) % N;
+        global_i = (global_i+1) % N;
+        global_j = (global_j+S[global_i]) % N;
 
-        aux_swap = S[j];
-        S[j] = S[i];
-        S[i] = aux_swap;
+        aux_swap = S[global_j];
+        S[global_j] = S[global_i];
+        S[global_i] = aux_swap;
 
-        t = (S[i]+S[j]) % N;
+        t = (S[global_i]+S[global_j]) % N;
 
         plain_text[n] = cipher[n] ^ S[t];
     }
