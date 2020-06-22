@@ -3,11 +3,27 @@
 
 uint32_t to_big_endian(uint8_t *aux);
 
+long size_of_file2 (FILE * fp) {
+
+    fseek(fp, 0L, SEEK_END);
+
+    // calculating the size of the file
+    long int res = ftell(fp);
+
+    // go back to the beginning
+    rewind(fp);
+
+    return res;
+}
+
+
 void start_extraction(void) {
     uint32_t length_embeded_bytes = 0;
     uint8_t * embeded_bytes = 0;
     char * embeded_bytes_extension = 0;
     uint8_t embeded_bytes_extension_size = 0;
+
+
 
     //Se abre la foto portadora del mensaje y se avanza hasta después del header porque ahí no hay información escondida
     FILE* bearer_file = fopen(stegobmp_config.bearer, "rb");
@@ -82,43 +98,81 @@ uint8_t* extract_LSB1(FILE* bearer_file, uint32_t  embeded_bytes_size){
     return hidden_message;
 }
 
+
+
 uint8_t * extract_LSBI(FILE* bearer_file, unsigned long * length_embeded_bytes) {
-    uint8_t read_byte;
+
+    //copio el bmp bearer. EMPROLIJAR
+    uint64_t size_of_bearer = size_of_file2(bearer_file);
+    uint8_t * bearer1 = malloc(size_of_bearer);
+    size_t number_of_bytes_read = fread(bearer1, sizeof(uint8_t), size_of_bearer, bearer_file);
+    uint8_t * bearer = malloc(size_of_bearer - BYTES_IN_HEADER);
+    memcpy(bearer , bearer1 + BYTES_IN_HEADER, size_of_bearer - BYTES_IN_HEADER);
 
     //levanto la clave
     uint8_t key[6];
     uint8_t byte_counter8 = 0;
 
     while (byte_counter8 < 6) {
-        key[byte_counter8] = (uint8_t) fgetc(bearer_file);
+        key[byte_counter8] = bearer[byte_counter8];
         byte_counter8++;
     }
 
+    uint8_t first_byte;
+
     //levanto el hop
-    read_byte = key[0];
+    first_byte = key[0];
     int ndx = 0, hop;
 
-    if(read_byte == 0) {
+    if(first_byte == 0) {
         hop = 256;
     } else {
-        while (1 < read_byte) {
-            read_byte = (read_byte >> 1);
+        while (1 < first_byte) {
+            first_byte = (first_byte >> 1);
             ndx++;
         }
         hop = pow(2,ndx);
     }
 
 
+    //levanto el size del mensaje escondido
+    uint8_t size[4]={0,0,0,0};
+    uint64_t index_bytes_embed = 0;
+    uint64_t jump = BYTES_IN_HEADER + BYTES_IN_KEY;
+
+    while (index_bytes_embed < 4) {
+        for(int i = 0; i < 8; i++) {
+            uint8_t new_bit = (uint8_t) ((bearer[jump]  & 0x1) << (7 - i));
+            size[index_bytes_embed] = size[index_bytes_embed] | new_bit;
+            jump = jump + hop;
+        }
+        index_bytes_embed++;
+    }
+
+
+//    while (byte_counter8 < 4) {
+//        for (int i = 0; i < 8; i++) {
+//            read_byte = (uint8_t) fgetc(bearer_file);
+//            uint8_t new_bit = (uint8_t) ((read_byte  & 0x1) << (7 - i));
+//            hidden_message[byte_counter32] =  hidden_message[byte_counter32] | new_bit;
+//        }
+//        byte_counter8++;
+//    }
 
 
 
-    //levanto la longitud del mensaje escondido
+
+
+
+
+
 
 
     printf("hola");
     // TODO
     return NULL;
 }
+
 
 
 char * extract_extension_LSB1(FILE* bearer_file, uint8_t* extension_length) {
