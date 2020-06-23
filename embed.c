@@ -133,23 +133,33 @@ void validate_sizes(FILE *bearer_file, unsigned long length_bytes_to_embed, int 
 
 void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
-    uint64_t size_bearer = size_of_file(bearer_file);
+    uint64_t size_of_bearer = size_of_file(bearer_file);
+    char * bearer_to_embed = malloc(size_of_bearer);
+    size_t number_of_bytes_read = fread(bearer_to_embed, sizeof(char), size_of_bearer, bearer_file);
+    if (size_of_bearer != number_of_bytes_read) {
+        fprintf(stderr, "ERROR: La lectura del archivo portador falló.\n");
+        return;
+    }
+
+    if (bearer_file == NULL) {
+        fprintf(stderr, "ERROR: El archivo portador no es válido.\n");
+        return;
+    }
+
+    if (out_file == NULL) {
+        fprintf(stderr, "ERROR: El path del archivo de salida es inválido.\n");
+        return;
+    }
 
      /*para que se pueda ocultar el mensaje en el bmp, por cada byte del mensaje se necesitan 2 bytes del bmp*/
-    if ((size_bearer - BYTES_IN_HEADER)*2 < length_bytes_to_embed) {
-        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %lu.\n", (size_bearer - BYTES_IN_HEADER) / 2);
+    if ((size_of_bearer - BYTES_IN_HEADER)*2 < length_bytes_to_embed) {
+        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu.\n", (size_of_bearer - BYTES_IN_HEADER) / 2);
         return;
     }
 
     uint64_t index_embed = 0;
     uint8_t mask = 0xF0;
-
-    int header_bytes = 0;
-    while (header_bytes < BYTES_IN_HEADER) {
-        uint8_t unmodified_pixel = fgetc(bearer_file);
-        fputc(unmodified_pixel, out_file);
-        header_bytes++;
-    }
+    uint64_t index_bearer = BYTES_IN_HEADER;
 
     while (index_embed < length_bytes_to_embed) {
 
@@ -160,30 +170,29 @@ void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_emb
             uint8_t new_byte = byte_to_embed & (0xF << i * 4);
             new_byte = new_byte >> (i * 4);
 
-            /*uint8_t new_pixel = stegobmp_config.bearer[index_bearer];
-            new_pixel = (new_pixel & mask) | new_byte;
-            stegobmp_config.bearer[index_bearer] = new_pixel;
-            index_bearer++;*/
-
             /* 1/3 pixel = unsigned char de 1 byte (0 a 255) */
-            uint8_t new_pixel = fgetc(bearer_file);
+            uint8_t new_pixel = bearer_to_embed[index_bearer];
             new_pixel = (new_pixel & mask) | new_byte;
-            fputc(new_pixel, out_file);
+            bearer_to_embed[index_bearer] = new_pixel;
+            index_bearer++;
         }
 
         index_embed++;
     }
 
-    while (!feof(bearer_file)) {
-        uint8_t unmodified_pixel = fgetc(bearer_file);
-        fputc(unmodified_pixel, out_file);
-    }
+    fwrite(bearer_to_embed, sizeof(char), size_of_bearer, out_file);
+    free(bearer_to_embed);
 }
 
 void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, unsigned long length_bytes_to_embed) {
 
     if (bearer_file == NULL) {
         fprintf(stderr, "ERROR: El archivo portador no es válido.\n");
+        return;
+    }
+
+    if (out_file == NULL) {
+        fprintf(stderr, "ERROR: El path del archivo de salida es inválido.\n");
         return;
     }
 
@@ -248,9 +257,6 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
         if (index_bits_embed < 0 || index_bits_embed > 7) {
             index_bits_embed = 7;
             index_bytes_embed++;
-        }
-        if (index_bytes_embed == 700) {
-            printf("hola");
         }
 
         /* buscamos el indice del out_file donde queremos esconder el bit */
