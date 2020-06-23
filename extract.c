@@ -36,7 +36,8 @@ void start_extraction(void) {
 
     if (stegobmp_config.encrypt) {
         int length_plain_text;
-        unsigned char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text); //no deberia de volver uint8_t* mejor??
+        unsigned char * plain_text = decrypt(embeded_bytes, length_embeded_bytes, &length_plain_text);
+        free(embeded_bytes);
 
         //Extraigo el tamaño
         memcpy(&length_embeded_bytes, plain_text, sizeof(uint32_t));
@@ -55,8 +56,10 @@ void start_extraction(void) {
     generate_output_file(embeded_bytes, length_embeded_bytes, embeded_bytes_extension, embeded_bytes_extension_size);
 
     fclose(bearer_file);
-    free(embeded_bytes_extension);
-    free(embeded_bytes);
+    if (!stegobmp_config.encrypt) {
+        free(embeded_bytes_extension);
+        free(embeded_bytes);
+    }
 }
 
 uint32_t to_big_endian(uint8_t *aux) {
