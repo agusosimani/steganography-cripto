@@ -228,6 +228,7 @@ uint8_t * extract_LSBI(FILE* bearer_file, uint32_t * length_embeded_bytes, char*
     fread(bearer1, sizeof(uint8_t), size_of_bearer, bearer_file);
     uint8_t * bearer = malloc(size_of_bearer - BYTES_IN_HEADER);
     memcpy(bearer , bearer1 + BYTES_IN_HEADER, size_of_bearer - BYTES_IN_HEADER);
+    free(bearer1);
 
     //levanto la clave
     uint8_t* key = malloc(BYTES_IN_KEY);
@@ -246,6 +247,7 @@ uint8_t * extract_LSBI(FILE* bearer_file, uint32_t * length_embeded_bytes, char*
     //levanto el mensaje
     uint8_t* message_enc = extract_LSBI_aux(bearer, size_of_bearer, hop, *length_embeded_bytes, sizeof(uint8_t), &cycle_pos, &extracting_pos);
     uint8_t* message_dec = decrypt_rc4(message_enc, *length_embeded_bytes, key, BYTES_IN_KEY, true);
+    free(message_enc);
 
     //extraigo la extension
     *embeded_bytes_extension = calloc(15, sizeof(char));
@@ -260,9 +262,11 @@ uint8_t * extract_LSBI(FILE* bearer_file, uint32_t * length_embeded_bytes, char*
         (*embeded_bytes_extension)[length_extension] = extension_dec[0];
         length_extension++;
         free(extension_enc);
+        free(extension_dec);
     }
     *embeded_bytes_extension_size = length_extension;
 
+    free(bearer);
     free(key);
     free(message_size_enc);
     return message_dec;
