@@ -3,6 +3,7 @@
 
 #include "encryption.h"
 #include "byteswap.h"
+#include <math.h>
 
 #define UNMASK_BIT_0 0xFE               /* 11111110 */
 #define UNMASK_BIT_1 0xFD               /* 11111101 */

@@ -279,6 +279,11 @@ uint8_t *extract_LSBI_aux(uint8_t * bearer, uint64_t size_of_bearer,  uint32_t h
     uint8_t* message_enc = calloc(n_elems, size_of_elem);
     uint64_t bytes_extracted = 0;
 
+    if (size_of_bearer < n_elems) {
+        fprintf(stderr, "ERROR: El tamaño del portador es menor al mensaje que se desea extraer.\n");
+        return NULL;
+    }
+
     while (bytes_extracted < n_elems) {
         for(int i = 0; i < 8; i++) {
             uint8_t new_bit = (uint8_t) ((bearer[*extracting_pos]  & 0x1) << (7 - i));

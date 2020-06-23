@@ -1,8 +1,7 @@
 #include "include/embed.h"
 
-const uint8_t unmask_array[8] = {UNMASK_BIT_0, UNMASK_BIT_1, UNMASK_BIT_2, UNMASK_BIT_3, UNMASK_BIT_4, UNMASK_BIT_5, UNMASK_BIT_6, UNMASK_BIT_7};
 const uint8_t mask_array[8] = {MASK_BIT_0, MASK_BIT_1, MASK_BIT_2, MASK_BIT_3, MASK_BIT_4, MASK_BIT_5, MASK_BIT_6, MASK_BIT_7};
-uint64_t select_output_byte (uint8_t hoop, uint64_t jump_from, uint64_t size);
+uint64_t select_output_byte (uint8_t hoop, uint64_t jump_from, int * cycles, uint64_t size);
 long size_of_file (FILE * fp);
 
 void start_embedding(void) {
@@ -206,18 +205,18 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
 
     /* usaremos como clave los 6 primeros bytes (48 bits) de la imagen portadora */
     uint8_t * key = malloc(BYTES_IN_KEY);
-    uint8_t key_bytes = BYTES_IN_HEADER;
-    while (key_bytes < BYTES_IN_KEY + BYTES_IN_HEADER ) {
-        uint8_t byte = bearer_to_embed[key_bytes - BYTES_IN_HEADER];
-        key[key_bytes - BYTES_IN_HEADER] = byte;
+    uint8_t key_bytes = 0;
+    while (key_bytes < BYTES_IN_KEY ) {
+        uint8_t byte = bearer_to_embed[key_bytes + BYTES_IN_HEADER];
+        key[key_bytes] = byte;
         key_bytes++;
     }
 
-    int hoop = key[0];
-    uint8_t aux = 0;
+    uint32_t hoop = key[0];
+    uint32_t aux = 0;
     bool found = false;
     for (int i = 0; i < 8 && !found; i++) {
-        if (!found && ((hoop << i) & 0x80) != 0) {
+        if (!found && ((hoop << i) & MASK_BIT_7) != 0) {
             aux = mask_array[7-i];
             found = true;
         }
@@ -232,8 +231,8 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     free(key);
 
     /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
-    if ((size_of_bearer - FIRST_READ_BYTE) < length_bytes_to_embed) {
-        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu.\n", (size_of_bearer - FIRST_READ_BYTE));
+    if ((size_of_bearer - FIRST_READ_BYTE)*8 < length_bytes_to_embed) {
+        fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu.\n", (size_of_bearer - FIRST_READ_BYTE) / 8);
         return;
     }
 
@@ -250,9 +249,9 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
         uint8_t byte_to_embed = bytes_to_embed_encrypted[index_bytes_embed];
         uint8_t bit_to_embed = (byte_to_embed & mask_array[index_bits_embed]) >> index_bits_embed;
         /* segun el ciclo, posicionamos el bit donde no pise bits ya ocultados dentro del byte de out_file */
-        if (index_bytes_bearer_modified > size_of_bearer - FIRST_READ_BYTE) {
+        /*if (index_bytes_bearer_modified > size_of_bearer - FIRST_READ_BYTE) {
             bit_to_embed = bit_to_embed << cycles;
-        }
+        }*/
         index_bits_embed--;
         if (index_bits_embed < 0 || index_bits_embed > 7) {
             index_bits_embed = 7;
@@ -260,14 +259,14 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
         }
 
         /* buscamos el indice del out_file donde queremos esconder el bit */
-        jump_to = select_output_byte(hoop, jump_to, size_of_bearer);
+        jump_to = select_output_byte(hoop, jump_to, &cycles, size_of_bearer);
         uint8_t new_pixel = bearer_to_embed[jump_to];
-        new_pixel = (new_pixel & unmask_array[cycles]) | bit_to_embed;
+        new_pixel = (new_pixel & UNMASK_BIT_0) | bit_to_embed;
         bearer_to_embed[jump_to] = new_pixel;
-        index_bytes_bearer_modified++;
+        /*index_bytes_bearer_modified++;
         if (index_bytes_bearer_modified % (size_of_bearer - FIRST_READ_BYTE)  == 0) {
             cycles = cycles + 1;
-        }
+        }*/
 
     }
 
@@ -276,7 +275,7 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     free(bytes_to_embed_encrypted);
 }
 
-uint64_t select_output_byte (uint8_t hoop, uint64_t jump_from, uint64_t size) {
+uint64_t select_output_byte (uint8_t hoop, uint64_t jump_from, int * cycles, uint64_t size) {
 
     if (jump_from == 0) {
         return FIRST_READ_BYTE;
@@ -285,7 +284,8 @@ uint64_t select_output_byte (uint8_t hoop, uint64_t jump_from, uint64_t size) {
     uint64_t jump = jump_from + hoop;
     if (jump >= size) {
 
-        jump = (jump - size) + FIRST_READ_BYTE;
+        *cycles = *cycles + 1;
+        jump = *cycles + FIRST_READ_BYTE;
     }
 
     return jump;
