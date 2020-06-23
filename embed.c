@@ -151,7 +151,7 @@ void embed_LSB4 (FILE* bearer_file, FILE* out_file, const uint8_t * bytes_to_emb
     }
 
      /*para que se pueda ocultar el mensaje en el bmp, por cada byte del mensaje se necesitan 2 bytes del bmp*/
-    if ((size_of_bearer - BYTES_IN_HEADER)*2 < length_bytes_to_embed) {
+    if ((size_of_bearer - BYTES_IN_HEADER) / 2 < length_bytes_to_embed) {
         fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu.\n", (size_of_bearer - BYTES_IN_HEADER) / 2);
         return;
     }
@@ -230,8 +230,8 @@ void embed_LSBI(FILE* bearer_file, FILE* out_file, uint8_t * bytes_to_embed, uns
     uint8_t * bytes_to_embed_encrypted = encrypt_rc4(bytes_to_embed, length_bytes_to_embed, key, BYTES_IN_KEY);
     free(key);
 
-    /* para ocultar el mensaje en el bmp, puedo usar todos los bytes disponibles del bearer */
-    if ((size_of_bearer - FIRST_READ_BYTE)*8 < length_bytes_to_embed) {
+    /* para ocultar el mensaje en el bmp, para 1 byte del mensaje necesito 8 del bearer */
+    if ((size_of_bearer - FIRST_READ_BYTE) / 8 < length_bytes_to_embed) {
         fprintf(stderr, "ERROR: No hay capacidad para ocultar el mensaje, el tamaño disponible es %llu.\n", (size_of_bearer - FIRST_READ_BYTE) / 8);
         return;
     }
